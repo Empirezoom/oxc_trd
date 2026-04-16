@@ -1,0 +1,615 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}OctalX | Institutional Digital Assets Terminal{% endblock %}</title>
+    
+    <script>
+        window.OCTALX_CONFIG = {
+            prefSymbol: "{{ pref_symbol|default:'$' }}",
+            currencyRate: parseFloat("{{ currency_rate|default:'1.0' }}") || 1.0,
+            prefCurrency: "{{ pref_currency|default:'USD' }}"
+        };
+    </script>
+    <meta
+      name="description"
+      content="{% block meta_desc %}Premium Forex & Crypto Trading Platform.{% endblock %}"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+    <link rel="icon" type="image/png" href="{% static 'img/branding/favicon.png' %}" />
+    <link rel="apple-touch-icon" href="{% static 'img/branding/favicon.png' %}" />
+    <meta name="theme-color" content="#07090d" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body>
+    <!-- Flash Messages -->
+    {% if messages %}
+    <div id="toast-container">
+      {% for message in messages %}
+      <div
+        class="toast {% if message.tags == 'error' %}toast-error{% else %}toast-success{% endif %}"
+      >
+        <i
+          class="fas {% if message.tags == 'error' %}fa-circle-xmark{% else %}fa-circle-check{% endif %}"
+        ></i>
+        <span>{{ message }}</span>
+        <button onclick="this.parentElement.remove()" style="background:none; border:none; color:inherit; margin-left:15px; cursor:pointer;"><i class="fas fa-times"></i></button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <a href="{% url 'index' %}" class="logo-mini" title="OctalX">
+        <svg
+          viewBox="0 0 100 100"
+          xmlns="http://www.w3.org/2000/svg"
+          style="
+            width: 30px;
+            height: 30px;
+            filter: drop-shadow(0 0 8px var(--primary-glow));
+          "
+        >
+          <path
+            d="M20 40 L50 10 L80 40"
+            fill="none"
+            stroke="var(--primary)"
+            stroke-width="14"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M20 60 L50 90 L80 60"
+            fill="none"
+            stroke="var(--primary)"
+            stroke-width="14"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </a>
+      <nav class="sidebar-nav">
+        <a
+          href="{% url 'index' %}"
+          class="sidebar-item {% if request.resolver_match.url_name == 'index' %}active{% endif %}"
+          title="Trading Terminal"
+        >
+          <i class="fas fa-chart-line"></i>
+        </a>
+        <a
+          href="{% url 'market' %}"
+          class="sidebar-item {% if request.resolver_match.url_name == 'market' %}active{% endif %}"
+          title="Market Overview"
+        >
+          <i class="fas fa-magnifying-glass-chart"></i>
+        </a>
+        <a
+          href="{% url 'wallet' %}"
+          class="sidebar-item {% if request.resolver_match.url_name == 'wallet' %}active{% endif %}"
+          title="My Wallet"
+        >
+          <i class="fas fa-wallet"></i>
+        </a>
+        <a
+          href="{% url 'investment_plans' %}"
+          class="sidebar-item {% if request.resolver_match.url_name == 'investment_plans' %}active{% endif %}"
+          title="Investment Plans"
+        >
+          <i class="fas fa-seedling"></i>
+        </a>
+        <a
+          href="{% url 'my_investments' %}"
+          class="sidebar-item {% if request.resolver_match.url_name == 'my_investments' %}active{% endif %}"
+          title="My Managed Plans"
+        >
+          <i class="fas fa-briefcase"></i>
+        </a>
+        <a
+          href="{% url 'user_ai_trades' %}"
+          class="sidebar-item {% if request.resolver_match.url_name == 'user_ai_trades' %}active{% endif %}"
+          title="Investment Trades"
+        >
+          <i class="fas fa-robot"></i>
+        </a>
+        <a
+          href="{% url 'order_history' %}"
+          class="sidebar-item {% if request.resolver_match.url_name == 'order_history' %}active{% endif %}"
+          title="Order History"
+        >
+          <i class="fas fa-list"></i>
+        </a>
+        <a
+          href="{% url 'transaction_history' %}"
+          class="sidebar-item {% if request.resolver_match.url_name == 'transaction_history' %}active{% endif %}"
+          title="Transaction History"
+        >
+          <i class="fas fa-receipt"></i>
+        </a>
+        <a
+          href="{% url 'user_chat' %}"
+          class="sidebar-item {% if request.resolver_match.url_name == 'user_chat' %}active{% endif %}"
+          title="Broker Chat & Signals"
+          style="color: var(--primary)"
+        >
+          <i class="fas fa-comment-dots"></i>
+        </a>
+      </nav>
+      <div class="sidebar-bottom">
+        {% if user.is_superuser %}
+        <a
+          href="{% url 'custom_admin_dashboard' %}"
+          class="sidebar-item"
+          title="Admin Panel"
+          style="color: var(--danger); background: rgba(246,70,93,0.15); border: 1px solid rgba(246,70,93,0.3); border-radius: 8px;"
+        >
+          <i class="fas fa-hammer"></i>
+        </a>
+        {% endif %}
+        <a
+          href="{% url 'profile' %}"
+          class="sidebar-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}"
+          title="Settings"
+        >
+          <i class="fas fa-gear"></i>
+        </a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'logout' %}" class="sidebar-item" title="Logout">
+          <i class="fas fa-right-from-bracket"></i>
+        </a>
+        {% endif %}
+      </div>
+    </aside>
+
+    <!-- Mobile Side Drawer -->
+    <div class="mobile-drawer-overlay" id="drawer-overlay" onclick="toggleDrawer()"></div>
+    <div class="mobile-drawer" id="mobile-drawer">
+        <div class="drawer-header">
+            <div class="logo"><span>OCTAL</span>X</div>
+            <button onclick="toggleDrawer()" class="drawer-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="drawer-mode-toggle" style="padding: 15px 25px; border-bottom: 1px solid var(--border);">
+            <form action="{% url 'toggle_demo_mode' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn {% if user.profile.is_demo_mode or is_demo_mode or profile.is_demo_mode %}btn-demo-mode{% else %}btn-real-mode{% endif %}" style="width: 100%; justify-content: space-between; padding: 12px 20px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        {% if user.profile.is_demo_mode or is_demo_mode or profile.is_demo_mode %}
+                        <i class="fas fa-shield-halved"></i> <span>VIRTUAL ACCOUNT</span>
+                        {% else %}
+                        <i class="fas fa-flask"></i> <span>LIVE ACCOUNT</span>
+                        {% endif %}
+                    </div>
+                    <span style="font-size: 10px; opacity: 0.7;">SWITCH</span>
+                </button>
+            </form>
+        </div>
+        <div class="drawer-user">
+            {% if user.is_authenticated %}
+            <div class="user-pill-large">
+                <img src="https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}&backgroundColor=d4af37&fontColor=07090d" alt="">
+                <div>
+                    <div class="username" style="color: white; font-weight: 800; font-size: 16px;">{{ user.username }}</div>
+                    {% if profile.is_verified or user.profile.is_verified %}
+                    <div class="user-status" style="color: var(--success); font-size: 10px; font-weight: 700; text-transform: uppercase;">VERIFIED ACCOUNT</div>
+                    {% else %}
+                    <div class="user-status" style="color: var(--text-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase;">UNVERIFIED</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <nav class="drawer-nav" style="flex: 1; overflow-y: auto; padding-bottom: 50px;">
+            <a href="{% url 'index' %}" class="drawer-item"><i class="fas fa-chart-line"></i> Trading Terminal</a>
+            <a href="{% url 'market' %}" class="drawer-item"><i class="fas fa-magnifying-glass-chart"></i> Market Overview</a>
+            <a href="{% url 'wallet' %}" class="drawer-item"><i class="fas fa-wallet"></i> My Wallet</a>
+            <a href="{% url 'investment_plans' %}" class="drawer-item"><i class="fas fa-seedling"></i> Investment Plans</a>
+            <a href="{% url 'my_investments' %}" class="drawer-item"><i class="fas fa-briefcase"></i> Managed Portfolios</a>
+            <a href="{% url 'user_ai_trades' %}" class="drawer-item"><i class="fas fa-robot"></i> Investment History</a>
+            <a href="{% url 'order_history' %}" class="drawer-item"><i class="fas fa-list"></i> Order History</a>
+            <a href="{% url 'transaction_history' %}" class="drawer-item"><i class="fas fa-receipt"></i> Transaction Log</a>
+            {% if user.is_superuser %}
+            <a href="{% url 'custom_admin_dashboard' %}" class="drawer-item" style="color:var(--danger); border: 1px solid rgba(246,70,93,0.3); border-radius: 8px; margin: 10px 20px; background: rgba(246,70,93,0.1);">
+                <i class="fas fa-hammer"></i> <strong>ADMIN CONSOLE</strong>
+            </a>
+            {% endif %}
+            <div class="drawer-divider"></div>
+            <a href="{% url 'profile' %}" class="drawer-item"><i class="fas fa-gear"></i> Settings</a>
+            {% if user.is_authenticated %}
+            <a href="{% url 'logout' %}" class="drawer-item color-danger"><i class="fas fa-right-from-bracket"></i> Sign Out</a>
+            {% endif %}
+        </nav>
+    </div>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+      <!-- Header -->
+      <header class="app-header">
+        <div class="header-left-mobile" style="display:none;">
+            <button class="hamburger" onclick="toggleDrawer()"><i class="fas fa-bars"></i></button>
+        </div>
+        <div class="logo">
+          <svg
+            viewBox="0 0 100 100"
+            xmlns="http://www.w3.org/2000/svg"
+            style="
+              width: 24px;
+              height: 24px;
+              margin-right: 12px;
+              filter: drop-shadow(0 0 8px var(--primary-glow));
+            "
+          >
+            <path
+              d="M20 40 L50 10 L80 40"
+              fill="none"
+              stroke="var(--primary)"
+              stroke-width="16"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M20 60 L50 90 L80 60"
+              fill="none"
+              stroke="var(--primary)"
+              stroke-width="16"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span>OCTAL</span>X
+        </div>
+        <div class="header-center">
+          <div class="market-status">
+            <span class="status-dot"></span>
+            {% if user.profile.is_demo_mode or is_demo_mode or profile.is_demo_mode %}
+            <span
+              style="
+                color: var(--text-secondary);
+                font-weight: 800;
+                letter-spacing: 2px;
+              "
+              >VIRTUAL TRADING</span
+            >
+            {% else %} Live Markets {% endif %}
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="header-mobile-mode" style="display:none;">
+              {% if user.profile.is_demo_mode or is_demo_mode or profile.is_demo_mode %}
+              <span class="mode-tag demo">DEMO</span>
+              {% else %}
+              <span class="mode-tag live">LIVE</span>
+              {% endif %}
+          </div>
+          {% if user.is_authenticated %}
+          <div class="header-actions-desktop">
+              <form action="{% url 'toggle_demo_mode' %}" method="post" style="display: inline">
+                {% csrf_token %}
+                <button type="submit" class="btn {% if user.profile.is_demo_mode or is_demo_mode or profile.is_demo_mode %}btn-demo-mode{% else %}btn-real-mode{% endif %}" title="Switch mode">
+                  {% if user.profile.is_demo_mode or is_demo_mode or profile.is_demo_mode %}
+                  <i class="fas fa-shield-halved"></i> <span>SWITCH TO LIVE</span>
+                  {% else %}
+                  <i class="fas fa-flask"></i> <span>SWITCH TO DEMO</span>
+                  {% endif %}
+                </button>
+              </form>
+          </div>
+          <a
+            href="{% url 'transaction_history' %}"
+            class="header-icon-btn"
+            title="Transaction History"
+          >
+            <i class="fas fa-bell"></i>
+          </a>
+          <a href="{% url 'profile' %}" class="user-pill">
+            {% if user.profile.profile_picture %}
+            <img
+              src="{{ user.profile.profile_picture.url }}"
+              alt="{{ user.username }}"
+            />
+            {% else %}
+            <img
+              src="https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}&backgroundColor=d4af37&fontColor=07090d"
+              alt="{{ user.username }}"
+            />
+            {% endif %}
+            <span>{{ user.username }}</span>
+            <i class="fas fa-chevron-down" style="font-size: 9px"></i>
+          </a>
+          {% else %}
+          <a href="{% url 'login' %}" class="btn btn-gold-sm">Sign In</a>
+          <a href="{% url 'signup' %}" class="btn btn-outline-sm">Register</a>
+          {% endif %}
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      {% block content %}{% endblock %}
+
+      <!-- Institutional Footer -->
+      <footer
+        class="app-footer"
+        style="
+          height: auto;
+          min-height: 40px;
+          padding: 15px 10%;
+          flex-wrap: wrap;
+          justify-content: space-between;
+        "
+      >
+        <div style="display: flex; align-items: center; gap: 15px">
+          <span class="footer-brand">OCTALX</span>
+          <div class="footer-sep"></div>
+          <span class="footer-slogan" style="letter-spacing: 1px"
+            >&copy; 2026 GLOBAL TRADING LTD. SYSTEM SECURE.</span
+          >
+        </div>
+        <div
+          style="display: flex; gap: 20px; font-size: 9px; letter-spacing: 1px"
+        >
+          <a
+            href="{% url 'terms' %}"
+            style="
+              color: var(--text-secondary);
+              text-decoration: none;
+              text-transform: uppercase;
+            "
+            >Terms</a
+          >
+          <a
+            href="{% url 'privacy' %}"
+            style="
+              color: var(--text-secondary);
+              text-decoration: none;
+              text-transform: uppercase;
+            "
+            >Privacy</a
+          >
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      // Auto-dismiss flash toasts
+      document.addEventListener('DOMContentLoaded', () => {
+          const toasts = document.querySelectorAll('.toast');
+          toasts.forEach((t, i) => {
+              setTimeout(() => { t.classList.add('fade-out'); setTimeout(() => t.remove(), 500); }, 4000 + i * 500);
+          });
+
+          // Sidebar tooltip labels (already handled via title attr)
+      });
+      {% block extra_admin_modals %}{% endblock %}
+
+      <!-- ── CHAT SYSTEM ────────────────────────────── -->
+      {% if user.is_authenticated %}
+      <div class="chat-float" id="chat-toggle" title="Chat with Broker" style="z-index: 9999;">
+          <i class="fas fa-comment-dots"></i>
+      </div>
+
+      <div class="chat-modal-wrap" id="chat-modal" style="z-index: 9999;">
+          <div class="chat-m-head">
+              <div style="display:flex; align-items:center; gap:10px;">
+                  <div style="width:10px; height:10px; background:#00df82; border-radius:50%; box-shadow: 0 0 10px #00df82;"></div>
+                  <span style="font-family:'Cinzel'; font-size:12px; letter-spacing:1px;">OctalX Broker</span>
+              </div>
+              <button onclick="toggleChat()" style="background:none; border:none; color:var(--text-secondary); cursor:pointer;"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="chat-m-body" id="chat-messages">
+              <div class="chat-msg admin">Hello! I am your dedicated OctalX Broker. How can I assist your trading journey today?</div>
+          </div>
+          <div class="chat-m-foot">
+              <input type="text" id="chat-input" class="chat-input" placeholder="Type a message...">
+              <button onclick="sendMsg()" style="background:var(--primary); border:none; width:36px; height:36px; border-radius:8px; cursor:pointer;"><i class="fas fa-paper-plane" style="color:black;"></i></button>
+          </div>
+      </div>
+
+      <script>
+          const chatModal = document.getElementById('chat-modal');
+          const chatMessages = document.getElementById('chat-messages');
+          const chatInput = document.getElementById('chat-input');
+          let lastMsgCount = 0;
+
+          function toggleChat() {
+              chatModal.classList.toggle('active');
+              if(chatModal.classList.contains('active')) {
+                  loadMessages(true); // Force scroll on first open
+                  chatInput.focus();
+              }
+          }
+
+          document.getElementById('chat-toggle').addEventListener('click', toggleChat);
+
+          async function loadMessages(forceScroll = false) {
+              try {
+                  const r = await fetch('{% url "api_get_messages" %}');
+                  const d = await r.json();
+
+                  if (d.messages.length === lastMsgCount && !forceScroll) return; // No new messages, skip update
+
+                  chatMessages.innerHTML = '<div class="chat-msg admin">Hello! I am your dedicated OctalX Broker. How can I assist your trading journey today?</div>';
+                  d.messages.forEach(m => {
+                      const div = document.createElement('div');
+                      div.className = 'chat-msg ' + (m.is_admin ? 'admin' : 'user');
+
+                      if (m.message && m.message.startsWith('SIGNAL:')) {
+                          const expiryId = `exp-${Math.random().toString(36).substr(2, 9)}`;
+                          const isPending = (m.signal_status === 'PENDING');
+
+                          div.innerHTML = `
+                              <div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 8px; font-weight: 800; color: var(--primary); display: flex; justify-content: space-between;">
+                                  <span><i class="fas fa-tower-broadcast"></i> TRADE SIGNAL</span>
+                                  ${isPending ? `<span id="${expiryId}" style="color: var(--danger); font-family: 'JetBrains Mono'; font-size: 10px;">60s</span>` : ''}
+                              </div>
+                              <div style="font-size: 11px; margin-bottom: 10px;">${m.message}</div>
+                              ${isPending ? `
+                              <div style="display: flex; gap: 8px;">
+                                  <button onclick="respondSignal('ACCEPTED', ${m.signal_id}, this)" style="flex:1; background:var(--success); border:none; border-radius:4px; padding: 6px; font-size:10px; font-weight:800; cursor:pointer;">ACCEPT</button>
+                                  <button onclick="respondSignal('REJECTED', ${m.signal_id}, this)" style="flex:1; background:rgba(255,255,255,0.1); color:white; border:none; border-radius:4px; padding: 6px; font-size:10px; font-weight:800; cursor:pointer;">REJECT</button>
+                              </div>` : `<div style="text-align:center; padding:5px; background:rgba(255,255,255,0.05); border-radius:4px; font-size:10px; font-weight:800; color:var(--primary);">${m.signal_status}</div>`}
+                          `;
+
+                          // Start Countdown only if pending
+                          if(isPending) {
+                              let timeLeft = 60;
+                              const timer = setInterval(() => {
+                                  timeLeft--;
+                                  const el = document.getElementById(expiryId);
+                                  if (el) el.innerText = timeLeft + 's';
+                                  if (timeLeft <= 0) {
+                                      clearInterval(timer);
+                                      if(m.signal_status === 'PENDING') {
+                                          div.style.opacity = '0.3';
+                                          div.style.pointerEvents = 'none';
+                                      }
+                                  }
+                              }, 1000);
+                          }
+                      } else {
+                          div.textContent = m.message;
+                      }
+                      chatMessages.appendChild(div);
+                  });
+
+                  if (d.messages.length > lastMsgCount || forceScroll) {
+                      chatMessages.scrollTop = chatMessages.scrollHeight;
+                  }
+                  lastMsgCount = d.messages.length;
+              } catch(e) {}
+          }
+
+          async function respondSignal(action, sigId, btn) {
+              if(!sigId) return;
+              const originalText = btn.innerText;
+              btn.innerText = '...';
+              btn.disabled = true;
+              try {
+                  const r = await fetch('{% url 'api_respond_signal' %}', {
+                      method: 'POST',
+                      headers: {'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json'},
+                      body: JSON.stringify({action: action, signal_id: sigId})
+                  });
+                  const d = await r.json();
+                  if (d.status === 'ok') {
+                      btn.closest('.chat-msg').innerHTML = `<div style="text-align:center; padding:10px; color:var(--success); font-weight:800; font-size:11px;"><i class="fas fa-circle-check"></i> SIGNAL ${action}</div>`;
+                      setTimeout(() => loadMessages(true), 1500);
+                  }
+              } catch(e) {
+                  btn.innerText = originalText;
+                  btn.disabled = false;
+              }
+          }
+
+          async function sendMsg() {
+              const val = chatInput.value.trim();
+              if(!val) return;
+              chatInput.value = '';
+
+              // Optimistic UI
+              const div = document.createElement('div');
+              div.className = 'chat-msg user';
+              div.textContent = val;
+              chatMessages.appendChild(div);
+              chatMessages.scrollTop = chatMessages.scrollHeight;
+
+              try {
+                  await fetch('{% url "api_send_message" %}', {
+                      method: 'POST',
+                      headers: {'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json'},
+                      body: JSON.stringify({message: val})
+                  });
+                  // Update count after send to prevent jump
+                  lastMsgCount++;
+              } catch(e) {}
+          }
+
+          chatInput.addEventListener('keypress', (e) => {
+              if(e.key === 'Enter') sendMsg();
+          });
+
+          // Polling loop - fast for active chat
+          setInterval(() => {
+              if(chatModal.classList.contains('active')) {
+                  loadMessages();
+              }
+          }, 3000);
+    </script>
+    {% endif %}
+
+    <!-- Global Details Modal -->
+    <div id="global-modal" class="modal-root">
+        <div class="modal-overlay" onclick="closeGlobalModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modal-title">Record Details</span>
+                <button class="modal-close" onclick="closeGlobalModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="modal-body-content">
+                <!-- Content injected via JS -->
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn-close" onclick="closeGlobalModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .modal-root { position: fixed; inset: 0; z-index: 5000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-root.active { display: flex; }
+        .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); }
+        .modal-content { position: relative; width: 100%; max-width: 500px; background: #1a1e26; border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: translateY(20px); transition: 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+        .modal-root.active .modal-content { transform: translateY(0); }
+        .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-header span { font-family: 'Cinzel'; color: var(--primary); font-weight: 800; font-size: 14px; letter-spacing: 1px; }
+        .modal-body { padding: 25px; max-height: 70vh; overflow-y: auto; }
+        .modal-footer { padding: 15px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; }
+        .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label { color: var(--text-secondary); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .detail-value { font-weight: 700; color: white; font-size: 13px; text-align: right; }
+        .modal-btn-close { background: var(--bg-surface); border: 1px solid var(--border); color: white; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .modal-close { background: none; border: none; color: var(--text-secondary); font-size: 20px; cursor: pointer; }
+    </style>
+
+    <script>
+      function toggleDrawer() {
+          const d = document.getElementById('mobile-drawer');
+          const o = document.getElementById('drawer-overlay');
+          d.classList.toggle('active');
+          o.classList.toggle('active');
+          if(d.classList.contains('active')) document.body.style.overflow = 'hidden';
+          else document.body.style.overflow = 'auto';
+      }
+
+      function showGlobalModal(title, details) {
+          document.getElementById('modal-title').innerText = title;
+          let body = '';
+          for (const [label, value] of Object.entries(details)) {
+              body += `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value}</span></div>`;
+          }
+          document.getElementById('modal-body-content').innerHTML = body;
+          document.getElementById('global-modal').classList.add('active');
+          document.body.style.overflow = 'hidden';
+      }
+
+      function closeGlobalModal() {
+          document.getElementById('global-modal').classList.remove('active');
+          document.body.style.overflow = 'auto';
+      }
+    </script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

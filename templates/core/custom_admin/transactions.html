@@ -1,0 +1,62 @@
+{% extends 'core/custom_admin/admin_base.html' %}
+
+{% block admin_title %}Transactions{% endblock %}
+
+{% block admin_content %}
+<div style="margin-bottom: 40px;">
+    <h1 style="font-family: 'Cinzel'; font-size: 32px; margin-bottom: 5px;">Ledger Transactions</h1>
+    <p style="color: var(--text-secondary); font-size: 14px;">Monitor all deposits and withdrawals</p>
+</div>
+
+<div class="data-card glass">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>User</th>
+                <th>Type</th>
+                <th>Asset</th>
+                <th class="right">Amount</th>
+                <th class="right">Status</th>
+                <th class="right">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in transactions %}
+            <tr>
+                <td data-label="Date" class="mono dim">{{ tx.timestamp|date:"M d, H:i" }}</td>
+                <td data-label="User" class="bold">{{ tx.user.username }}</td>
+                <td data-label="Type" class="{% if tx.tx_type == 'DEPOSIT' %}buy-text{% else %}sell-text{% endif %} bold">{{ tx.tx_type }}</td>
+                <td data-label="Asset">{{ tx.asset.symbol }}</td>
+                <td data-label="Amount" class="right">
+                    <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                        <span class="mono bold" style="color: {% if tx.tx_type == 'DEPOSIT' %}var(--success){% else %}var(--danger){% endif %};">
+                            {% if tx.tx_type == 'DEPOSIT' %}+{% else %}-{% endif %}{{ tx.amount|floatformat:8 }} {{ tx.asset.symbol }}
+                        </span>
+                        {% if tx.tx_type == 'DEPOSIT' %}
+                        <span class="dim" style="font-size: 11px;">(Ref: ${{ tx.usd_amount|floatformat:2 }})</span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td data-label="Status" class="right"><span class="badge badge-{{ tx.status|lower }}">{{ tx.status }}</span></td>
+                <td data-label="Actions" class="right">
+                    {% if tx.status == 'PENDING' %}
+                        {% if tx.tx_type == 'DEPOSIT' %}
+                            {% if tx.receipt_image %}
+                            <a href="{{ tx.receipt_image.url }}" target="_blank" class="trade-btn-sm" style="background: rgba(255,255,255,0.1); margin-right: 5px;"><i class="fas fa-image"></i> View Receipt</a>
+                            {% endif %}
+                        {% else %}
+                            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 5px;">TO: <span class="mono">{{ tx.tx_hash|default:"N/A" }}</span></div>
+                        {% endif %}
+                        <a href="{% url 'admin_approve_tx' tx.id %}" class="trade-btn-sm" style="background: rgba(0,223,130,0.1); color: var(--success); margin-right: 5px;">Approve</a>
+                        <a href="{% url 'admin_reject_tx' tx.id %}" class="trade-btn-sm" style="background: rgba(255,77,77,0.1); color: var(--danger);">Reject</a>
+                    {% else %}
+                        <span class="dim mono">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'core/custom_admin/admin_base.html' %} {% block admin_title %}Asset
+Registry{% endblock %} {% block admin_content %}
+<div style="margin-bottom: 40px">
+  <h1
+    style="font-family: &quot;Cinzel&quot;; font-size: 32px; margin-bottom: 5px"
+  >
+    Asset Registry
+  </h1>
+  <p style="color: var(--text-secondary); font-size: 14px">
+    Manage tradable pairs and base pricing
+  </p>
+</div>
+
+<div class="data-card glass">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Name</th>
+        <th class="right">Current Price</th>
+        <th class="right">24h Change</th>
+        <th class="right">24h Volume</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for asset in assets %}
+      <tr>
+        <td data-label="Symbol" class="bold">{{ asset.symbol }}</td>
+        <td data-label="Name">{{ asset.name }}</td>
+        <td data-label="Price" class="right mono">${{ asset.current_price }}</td>
+        <td data-label="24h Change"
+          class="right {% if asset.change_24h >= 0 %}buy-text{% else %}sell-text{% endif %} bold"
+        >
+          {% if asset.change_24h > 0 %}+{% endif %}{{ asset.change_24h }}%
+        </td>
+        <td data-label="Volume" class="right mono dim">${{ asset.volume_24h|floatformat:0 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

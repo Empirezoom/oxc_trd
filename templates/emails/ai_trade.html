@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #07090d; color: #ffffff; padding: 40px; }
+        .card { background: #1a1e26; border: 1px solid #d4af37; padding: 30px; border-radius: 12px; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+        .stat-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; }
+        .footer { margin-top: 30px; font-size: 12px; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 style="color: #d4af37;">Elite Trade Execution Notice</h2>
+        <p>Hello {{ user.username }},</p>
+        <p>Our Elite Managed Trading Engine has executed a new position on your account.</p>
+        
+        <div class="stat-grid">
+            <div class="stat-box">
+                <small>Asset</small><br><strong>{{ trade.asset.symbol }}</strong>
+            </div>
+            <div class="stat-box">
+                <small>Result</small><br><strong style="color: {% if trade.status == 'WON' %}#00df82{% else %}#f6465d{% endif %};">{{ trade.status }}</strong>
+            </div>
+            <div class="stat-box">
+                <small>Stake</small><br><strong>${{ trade.amount }}</strong>
+            </div>
+            <div class="stat-box">
+                <small>Profit/Loss</small><br><strong style="color: {% if trade.status == 'WON' %}#00df82{% else %}#f6465d{% endif %};">${{ trade.profit }}</strong>
+            </div>
+        </div>
+
+        <p>This trade has been automatically settled in your secure wallet.</p>
+        <div class="footer">
+            &copy; 2026 OctalX Global Trading. AI Managed Growth.
+        </div>
+    </div>
+</body>
+</html>

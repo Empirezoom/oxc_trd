@@ -1,0 +1,129 @@
+{% extends 'core/custom_admin/admin_base.html' %}
+
+{% block admin_title %}Manage Payment Addresses{% endblock %}
+
+{% block admin_content %}
+<style>
+    .address-card {
+        padding: 30px;
+        margin-bottom: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+    }
+    .address-card:hover {
+        border-color: var(--primary);
+        background: rgba(212, 175, 55, 0.02);
+    }
+    .asset-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .asset-icon-box {
+        width: 45px;
+        height: 45px;
+        background: rgba(212, 175, 55, 0.1);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: var(--primary);
+    }
+    .asset-meta h3 {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+    .asset-meta span {
+        font-size: 11px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .address-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    .commit-btn-wrap {
+        margin-top: 40px;
+        position: sticky;
+        bottom: 20px;
+        z-index: 10;
+        display: flex;
+        justify-content: center;
+    }
+    .commit-btn {
+        width: auto;
+        padding: 15px 60px;
+        border-radius: 50px;
+        font-size: 14px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    @media (max-width: 768px) {
+        .address-grid {
+            grid-template-columns: 1fr;
+        }
+        .commit-btn {
+            width: 100%;
+            padding: 15px 20px;
+            border-radius: 12px;
+        }
+    }
+</style>
+
+<div class="admin-page-header">
+    <h1 class="admin-page-title">PAYMENT <span style="color:var(--primary);">ADDRESSES</span></h1>
+    <p class="admin-page-sub">Configure the institutional receiving wallets for all platform assets.</p>
+</div>
+
+<div style="max-width: 1000px;">
+    <form method="POST">
+        {% csrf_token %}
+        <div class="address-list">
+            {% for asset in assets %}
+            <div class="address-card glass">
+                <div class="asset-info">
+                    <div class="asset-icon-box">
+                        {% if asset.symbol == 'ADA' %}
+                            <img src="https://cryptologos.cc/logos/cardano-ada-logo.png?v=029" style="width: 20px; height: 20px;" alt="ADA">
+                        {% elif 'fa-' in asset.icon_class %}
+                            <i class="{{ asset.icon_class }}"></i>
+                        {% else %}
+                            <i class="fa-solid fa-coins"></i>
+                        {% endif %}
+                    </div>
+                    <div class="asset-meta">
+                        <h3>{{ asset.name }}</h3>
+                        <span>{{ asset.symbol }} Network</span>
+                    </div>
+                </div>
+                
+                <div class="address-grid">
+                    <div class="sf-field">
+                        <label><i class="fas fa-wallet" style="font-size: 10px; margin-right: 5px;"></i> Receiving Address</label>
+                        <input type="text" name="addr_{{ asset.id }}" class="m-input" value="{{ asset.deposit_address }}" 
+                               style="font-family: 'JetBrains Mono'; font-size: 13px;" placeholder="Enter {{ asset.symbol }} Address" required>
+                    </div>
+                    <div class="sf-field">
+                        <label><i class="fas fa-tag" style="font-size: 10px; margin-right: 5px;"></i> Memo / Tag (Optional)</label>
+                        <input type="text" name="memo_{{ asset.id }}" class="m-input" value="{{ asset.memo_tag|default:'' }}" 
+                               style="font-family: 'JetBrains Mono'; font-size: 13px;" placeholder="Optional Tag / Memo / Destination Tag">
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="commit-btn-wrap">
+            <button type="submit" class="submit-order-btn buy-mode commit-btn">
+                <i class="fas fa-save" style="margin-right: 12px;"></i> COMMIT ALL CHANGES
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

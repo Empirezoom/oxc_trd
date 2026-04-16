@@ -1,0 +1,887 @@
+{% extends 'core/base.html' %} {% load static %} {% load currency_tags %} {% block title %}Trading
+Terminal | OCTALX{% endblock %} {% block content %}
+<div class="trading-grid">
+  <!-- ── PROMOTIONAL TICKER ─────────────────────────── -->
+  <div
+    style="
+      grid-column: 1 / -1;
+      margin-bottom: 25px;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      background: rgba(212, 175, 55, 0.02);
+      height: 50px;
+      display: flex;
+      align-items: center;
+      position: relative;
+    "
+  >
+    <div
+      style="
+        background: var(--primary);
+        color: black;
+        padding: 0 20px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        font-family: &quot;Cinzel&quot;;
+        font-weight: 900;
+        font-size: 13px;
+        z-index: 10;
+        white-space: nowrap;
+        box-shadow: 10px 0 20px rgba(0, 0, 0, 0.5);
+      "
+    >
+      ELITE OFFERS
+    </div>
+    <div style="flex: 1; overflow: hidden; position: relative">
+      <div
+        style="
+          display: inline-block;
+          white-space: nowrap;
+          animation: ticker-move 30s linear infinite;
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--text-secondary);
+        "
+      >
+        <span style="margin-right: 50px"
+          ><i class="fas fa-crown" style="color: var(--primary)"></i> ACTIVATE
+          ULTIMATE AI MANAGEMENT AND EARN UP TO 45% MONTHLY PERFORMANCE YIELD —
+          <a
+            href="{% url 'investment_plans' %}"
+            style="color: var(--primary); text-decoration: underline"
+            >ACTIVATE NOW</a
+          ></span
+        >
+        <span style="margin-right: 50px"
+          ><i class="fas fa-bolt" style="color: var(--primary)"></i> SECURE
+          $5.00 BTC BONUS FOR EVERY QUALIFIED TRADER YOU REFER —
+          <a
+            href="{% url 'my_investments' %}"
+            style="color: var(--primary); text-decoration: underline"
+            >GET LINK</a
+          ></span
+        >
+        <span style="margin-right: 50px"
+          ><i class="fas fa-shield-halved" style="color: var(--primary)"></i>
+          INSTITUTIONAL CAPITAL PROTECTION ENGAGED FOR ALL ENTERPRISE TIER
+          SUBSCRIBERS —
+          <a
+            href="{% url 'investment_plans' %}"
+            style="color: var(--primary); text-decoration: underline"
+            >UPGRADE</a
+          ></span
+        >
+      </div>
+    </div>
+    <style>
+      @keyframes ticker-move {
+        0% {
+          transform: translateX(100%);
+        }
+        100% {
+          transform: translateX(-100%);
+        }
+      }
+    </style>
+  </div>
+  <!-- ── CHART SECTION ─────────────────────────────── -->
+  <main class="chart-section" id="mobile-chart">
+    <!-- Mobile Mini Header Stats -->
+    <div style="display: none;" class="mobile-stats-header">
+       <div class="m-stat-item">
+         <span class="m-stat-label">Price</span>
+         <span id="m-live-price" class="m-stat-val">—</span>
+       </div>
+       <div class="m-stat-item">
+         <span class="m-stat-label">24h Change</span>
+         <span id="m-live-change" class="m-stat-val pos">—</span>
+       </div>
+    </div>
+    
+    <!-- Chart Toolbar -->
+    <div class="chart-toolbar">
+      <div class="pair-selector-wrap">
+        <select id="pair-select" class="pair-select">
+          {% for asset in assets %}
+          <option
+            value="{{ asset.symbol }}"
+            data-price="{{ asset.current_price }}"
+            data-change="{{ asset.change_24h }}"
+          >
+            {{ asset.symbol }}/USDT
+          </option>
+          {% empty %}
+          <option value="BTC">BTC/USDT</option>
+          <option value="ETH">ETH/USDT</option>
+          {% endfor %}
+        </select>
+        <div class="price-ticker">
+          <span id="live-price" class="price-value">—</span>
+          <span id="live-change" class="price-change positive">—</span>
+        </div>
+      </div>
+      <div class="timeframe-tabs">
+        <button class="tf-btn active" data-tf="1m">1m</button>
+        <button class="tf-btn" data-tf="5m">5m</button>
+        <button class="tf-btn" data-tf="15m">15m</button>
+        <button class="tf-btn" data-tf="1h">1h</button>
+        <button class="tf-btn" data-tf="4h">4h</button>
+        <button class="tf-btn" data-tf="1D">1D</button>
+      </div>
+    </div>
+
+    <!-- Chart Canvas -->
+    <div id="trading-chart" class="chart-canvas"></div>
+  </main>
+
+  <!-- ── ORDER PANEL ───────────────────────────────── -->
+  <aside class="order-panel">
+    {% if user.is_authenticated %}
+    <form method="POST" action="" id="order-form">
+      {% csrf_token %}
+      <input
+        type="hidden"
+        name="order_type"
+        id="order_type_field"
+        value="BUY"
+      />
+      <input
+        type="hidden"
+        name="symbol"
+        id="symbol_field"
+        value="{% if assets %}{{ assets.first.symbol }}{% else %}BTC{% endif %}"
+      />
+      <div class="order-form-header" style="margin-bottom: 20px;">
+          <h3 style="font-family: 'Cinzel'; font-size: 14px; color: var(--primary); letter-spacing: 1px;">EXECUTION TERMINAL</h3>
+          <p style="font-size: 10px; color: var(--text-secondary);">Direct Market Access engaged</p>
+      </div>
+      <input
+        type="hidden"
+        name="order_kind"
+        id="order_kind_field"
+        value="LIMIT"
+      />
+
+      <div class="order-type-tabs">
+        <button type="button" id="btn-buy" class="ot-btn ot-buy active">
+          BUY
+        </button>
+        <button type="button" id="btn-sell" class="ot-btn ot-sell">SELL</button>
+      </div>
+
+      <div class="order-kind-tabs">
+        <button type="button" class="ok-btn active" data-kind="LIMIT">
+          Limit
+        </button>
+        <button type="button" class="ok-btn" data-kind="MARKET">Market</button>
+      </div>
+
+      <div class="order-fields">
+        <div class="ofield">
+          <label>Quantity</label>
+          <div class="input-wrap">
+            <input
+              type="number"
+              step="0.00000001"
+              min="0.00000001"
+              name="quantity"
+              id="qty-input"
+              class="o-input"
+              placeholder="0.00"
+              required
+            />
+            <span class="input-unit unit-label">BTC</span>
+          </div>
+        </div>
+        <div class="ofield" id="price-field">
+          <label>Price</label>
+          <div class="input-wrap">
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              name="price"
+              id="price-input"
+              class="o-input"
+              placeholder="0.00"
+              required
+            />
+            <span class="input-unit">USDT</span>
+          </div>
+        </div>
+        <!-- Premium Forex Features UI -->
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-top: -5px;
+          "
+        >
+          <span class="dim">Leverage</span>
+          <span
+            class="bold"
+            style="
+              color: white;
+              background: rgba(255, 255, 255, 0.1);
+              padding: 2px 6px;
+              border-radius: 4px;
+            "
+            >50x
+            <i
+              class="fas fa-pencil"
+              style="font-size: 9px; margin-left: 3px"
+            ></i
+          ></span>
+        </div>
+        <div
+          style="display: flex; justify-content: space-between; font-size: 11px"
+        >
+          <span class="dim">Spread</span>
+          <span class="mono" style="color: var(--success)">0.08%</span>
+        </div>
+        <hr
+          style="border: 0; border-top: 1px solid var(--border); margin: 5px 0"
+        />
+
+        <div class="order-total-row">
+          <span class="ot-label">Required Margin</span>
+          <span class="ot-value" id="order-total">0.00 USDT</span>
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        class="submit-order-btn buy-mode"
+        id="submit-order-btn"
+      >
+        {% if is_demo_mode %}Execute Demo Order{% else %}Place Buy Order{% endif %}
+      </button>
+    </form>
+    {% else %}
+    <div class="auth-prompt">
+      <i
+        class="fas fa-lock"
+        style="font-size: 32px; color: var(--primary); margin-bottom: 15px"
+      ></i>
+      <p>Sign in to trade</p>
+      <a href="{% url 'login' %}" class="btn-gold-full">Login</a>
+      <a href="{% url 'signup' %}" class="btn-outline-full">Register</a>
+    </div>
+    {% endif %}
+
+    <!-- Market Stats Box -->
+    <div class="market-stats-box">
+      <div class="ms-title">Market Stats</div>
+      <div class="ms-row">
+        <span>24h High</span><span id="stat-high" class="pos">—</span>
+      </div>
+      <div class="ms-row">
+        <span>24h Low</span><span id="stat-low" class="neg">—</span>
+      </div>
+      <div class="ms-row"><span>24h Vol</span><span id="stat-vol">—</span></div>
+    </div>
+
+    <!-- Subtle Advert/Broker Promotion -->
+    <div
+      style="
+        margin-top: 25px;
+        padding: 20px;
+        background: linear-gradient(
+          135deg,
+          rgba(212, 175, 55, 0.1),
+          rgba(0, 0, 0, 0)
+        );
+        border-radius: 12px;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+      "
+    >
+      <div style="display: flex; gap: 15px; align-items: flex-start">
+        <div
+          style="
+            background: var(--primary);
+            color: black;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+          "
+        >
+          <i class="fas fa-bolt"></i>
+        </div>
+        <div>
+          <h4
+            style="
+              font-family: &quot;Cinzel&quot;;
+              font-size: 12px;
+              color: var(--primary);
+              margin-bottom: 4px;
+            "
+          >
+            Boost Your Returns
+          </h4>
+          <p
+            style="
+              font-size: 11px;
+              color: var(--text-secondary);
+              line-height: 1.4;
+              margin-bottom: 10px;
+            "
+          >
+            Connect with an OctalX Broker to automate your strategy and target
+            15% monthly APY.
+          </p>
+          <a
+            href="{% url 'investment_plans' %}"
+            style="
+              font-size: 10px;
+              font-weight: 800;
+              color: white;
+              text-transform: uppercase;
+              text-decoration: none;
+              border-bottom: 1px solid var(--primary);
+              padding-bottom: 2px;
+            "
+            >Learn More →</a
+          >
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── BOTTOM ORDERS PANEL ───────────────────────── -->
+  <section class="orders-section">
+    <div class="section-tabs">
+      <button class="stab active" data-target="open-orders-panel">
+        {% if is_demo_mode %}Demo{% else %}Real{% endif %} Open Orders
+      </button>
+      <button class="stab" data-target="positions-panel">
+        {% if is_demo_mode %}Virtual{% else %}Real{% endif %} Positions
+      </button>
+      <button class="stab" data-target="history-panel">
+        {% if is_demo_mode %}Demo{% else %}Live{% endif %} History
+      </button>
+    </div>
+
+    <!-- Open Orders -->
+    <div id="open-orders-panel" class="stab-panel active">
+      {% if orders %}
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Pair</th>
+            <th>Side</th>
+            <th>Kind</th>
+            <th>Price</th>
+            <th>Qty</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr>
+            <td data-label="Time" class="mono dim">
+              {{ order.created_at|date:"M d, H:i" }}
+            </td>
+            <td data-label="Pair" class="mono">
+              {{ order.asset.symbol }}/USDT
+            </td>
+            <td
+              data-label="Side"
+              class="{% if order.order_type == 'BUY' %}buy-text{% else %}sell-text{% endif %} bold"
+            >
+              {{ order.order_type }}
+            </td>
+            <td data-label="Kind" class="dim">{{ order.order_kind }}</td>
+            <td data-label="Price" class="mono">{% usd_price order.price %}</td>
+            <td data-label="Qty" class="mono">{{ order.quantity }}</td>
+            <td data-label="Total" class="mono">
+              {% usd_price order.total %}
+            </td>
+            <td data-label="Status">
+              <span class="badge badge-{{ order.status|lower }}"
+                >{{ order.status }}</span
+              >
+            </td>
+            <td data-label="Action">
+              <a
+                href="{% url 'cancel_order' order.id %}"
+                class="cancel-btn"
+                onclick="return confirm('Cancel this order?');"
+              >
+                <i class="fas fa-xmark"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <p>
+          No open orders{% if not user.is_authenticated %} —
+          <a href="{% url 'login' %}">Login to trade</a>{% endif %}
+        </p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Positions Panel -->
+    <div id="positions-panel" class="stab-panel">
+      {% if positions %}
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Balance</th>
+            <th class="right">Current Value</th>
+            <th class="right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in positions %}
+          <tr>
+            <td data-label="Asset" class="bold">
+              <div style="display: flex; align-items: center; gap: 8px">
+                <i
+                  class="{{ p.asset.icon_class }}"
+                  style="color: var(--primary); font-size: 12px"
+                ></i>
+                {{ p.asset.symbol }}
+              </div>
+            </td>
+            <td data-label="Balance" class="mono">
+              {{ p.display_balance|floatformat:8 }}
+            </td>
+            <td data-label="Current Value" class="right mono bold text-success">
+              {% convert_price p.display_value %}
+            </td>
+            <td data-label="Action" class="right">
+              <a
+                href="{% url 'index' %}?pair={{ p.asset.symbol }}"
+                class="trade-btn-sm"
+                style="padding: 4px 10px"
+                >Trade</a
+              >
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <i class="fas fa-briefcase"></i>
+        <p>
+          No active positions. <br /><span class="dim" style="font-size: 11px"
+            >Buy assets to see them listed here.</span
+          >
+        </p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- History Panel -->
+    <div id="history-panel" class="stab-panel">
+      {% if history %}
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Asset</th>
+            <th>Type</th>
+            <th>Price</th>
+            <th>Qty</th>
+            <th>Total</th>
+            <th class="right">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in history %}
+          <tr>
+            <td data-label="Time" class="mono dim">
+              {{ h.updated_at|date:"M d, H:i" }}
+            </td>
+            <td data-label="Asset" class="bold">{{ h.asset.symbol }}/USDT</td>
+            <td
+              data-label="Type"
+              class="{% if h.order_type == 'BUY' %}buy-text{% else %}sell-text{% endif %} bold"
+            >
+              {{ h.order_type }} {{ h.order_kind }}
+            </td>
+            <td data-label="Price" class="mono">
+              {% usd_price h.price %}
+            </td>
+            <td data-label="Qty" class="mono">
+              {{ h.quantity|floatformat:8 }}
+            </td>
+            <td data-label="Total" class="mono">
+              {% usd_price h.total %}
+            </td>
+            <td data-label="Status" class="right">
+              <span class="badge badge-{{ h.status|lower }}"
+                >{{ h.status }}</span
+              >
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <i class="fas fa-clock-rotate-left"></i>
+        <p>No trading history found.</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // ── Global DOM Elements ──────────────────────────────────
+    const buyBtn = document.getElementById("btn-buy");
+    const sellBtn = document.getElementById("btn-sell");
+    const orderTypeField = document.getElementById("order_type_field");
+    const submitBtn = document.getElementById("submit-order-btn");
+    const qtyInput = document.getElementById("qty-input");
+    const priceInput = document.getElementById("price-input");
+    const orderTotalEl = document.getElementById("order-total");
+    const priceField = document.getElementById("price-field");
+    const orderKindField = document.getElementById("order_kind_field");
+    const pairSelect = document.getElementById("pair-select");
+    const chartEl = document.getElementById("trading-chart");
+
+    // ── Chart Setup ───────────────────────────────────────────
+    const chart = LightweightCharts.createChart(chartEl, {
+      layout: {
+        background: { type: "solid", color: "#07090d" },
+        textColor: "#8e96a3",
+        fontSize: 11,
+      },
+      grid: {
+        vertLines: { color: "rgba(255,255,255,0.03)" },
+        horzLines: { color: "rgba(255,255,255,0.03)" },
+      },
+      rightPriceScale: { borderColor: "rgba(255,255,255,0.1)" },
+      timeScale: { borderColor: "rgba(255,255,255,0.1)", timeVisible: true },
+      crosshair: {
+        mode: LightweightCharts.CrosshairMode.Normal,
+        vertLine: { labelBackgroundColor: "#d4af37" },
+        horzLine: { labelBackgroundColor: "#d4af37" },
+      },
+    });
+
+    const resizeChart = () =>
+      chart.applyOptions({
+        width: chartEl.clientWidth,
+        height: chartEl.clientHeight,
+      });
+    window.addEventListener("resize", resizeChart);
+    resizeChart();
+
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: "#00df82",
+      downColor: "#ff4d4d",
+      borderVisible: false,
+      wickUpColor: "#00df82",
+      wickDownColor: "#ff4d4d",
+    });
+
+    // Volume series
+    const volSeries = chart.addHistogramSeries({
+      color: "rgba(212,175,55,0.3)",
+      priceFormat: { type: "volume" },
+      priceScaleId: "vol",
+    });
+    chart
+      .priceScale("vol")
+      .applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+
+    // ── Generate realistic candles ────────────────────────────
+    function generateCandles(basePrice, count, intervalSecs) {
+      const data = [],
+        vol = [];
+      let open = basePrice;
+      let t = Math.floor(Date.now() / 1000) - count * intervalSecs;
+      for (let i = 0; i < count; i++) {
+        const move = (Math.random() - 0.48) * open * 0.012;
+        const c = open + move;
+        const h = Math.max(open, c) + Math.random() * open * 0.005;
+        const l = Math.min(open, c) - Math.random() * open * 0.005;
+        data.push({ time: t, open, high: h, low: l, close: c });
+        vol.push({
+          time: t,
+          value: Math.random() * 5000000 + 500000,
+          color: c >= open ? "rgba(0,223,130,0.4)" : "rgba(255,77,77,0.4)",
+        });
+        open = c;
+        t += intervalSecs;
+      }
+      return { data, vol, lastPrice: open };
+    }
+
+    let liveData = null,
+      liveVol = null,
+      lastClose = 68000;
+    let liveTimer = null;
+
+    function loadChart(basePrice) {
+      const { data, vol, lastPrice } = generateCandles(basePrice, 150, 3600);
+      liveData = data;
+      liveVol = vol;
+      lastClose = lastPrice;
+      candleSeries.setData(data);
+      volSeries.setData(vol);
+      updatePriceTicker(lastPrice, 0);
+    }
+
+    function tickLive() {
+      if (!liveData) return;
+      const last = liveData[liveData.length - 1];
+      const move = (Math.random() - 0.49) * last.close * 0.0006; // Random movement
+      const newPrice = last.close + move;
+      const updated = {
+        ...last,
+        close: newPrice,
+        high: Math.max(last.high, newPrice),
+        low: Math.min(last.low, newPrice),
+      };
+      liveData[liveData.length - 1] = updated;
+      candleSeries.update(updated);
+      updatePriceTicker(newPrice, move);
+
+      // Update Stats Box High/Low if tick pushes boundaries
+      const highEl = document.getElementById("stat-high");
+      const lowEl = document.getElementById("stat-low");
+      if (highEl.innerText !== "—") {
+        const curHigh = parseFloat(
+          highEl.innerText.replace("$", "").replace(",", ""),
+        );
+        const curLow = parseFloat(
+          lowEl.innerText.replace("$", "").replace(",", ""),
+        );
+        if (newPrice > curHigh)
+          highEl.innerText =
+            "$" +
+            newPrice.toLocaleString(undefined, { minimumFractionDigits: 2 });
+        if (newPrice < curLow)
+          lowEl.innerText =
+            "$" +
+            newPrice.toLocaleString(undefined, { minimumFractionDigits: 2 });
+      }
+
+      // Populate placeholder with live price for convenience
+      if (!priceInput.readOnly) {
+        priceInput.placeholder = newPrice.toFixed(2);
+      } else {
+        priceInput.value = newPrice.toFixed(2);
+        calcTotal();
+      }
+    }
+
+    function updatePriceTicker(price, change) {
+      const pct = (change / (price - change)) * 100;
+      // Always show crypto prices in USD
+      const formattedPrice = '$' + price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' USD';
+      
+      document.getElementById("live-price").textContent = formattedPrice;
+      
+      // Update Mobile Mini Stats if they exist
+      const mobilePrice = document.getElementById("m-live-price");
+      if(mobilePrice) mobilePrice.textContent = formattedPrice;
+      
+      const changeEl = document.getElementById("live-change");
+      const mobileChange = document.getElementById("m-live-change");
+      
+      const changeText = (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%";
+      const changeClass = "price-change " + (pct >= 0 ? "positive" : "negative");
+      const mChangeClass = "m-stat-val " + (pct >= 0 ? "pos" : "neg");
+      
+      changeEl.textContent = changeText;
+      changeEl.className = changeClass;
+      
+      if(mobileChange) {
+          mobileChange.textContent = changeText;
+          mobileChange.className = mChangeClass;
+      }
+    }
+
+    // ── Pair select ───────────────────────────────────────────
+    function switchPair() {
+      const opt = pairSelect.options[pairSelect.selectedIndex];
+      const price = parseFloat(opt.dataset.price) || 68000;
+      const sym = pairSelect.value;
+      
+      document.getElementById("symbol_field").value = sym;
+      
+      // Update ALL unit labels in the trading form
+      document.querySelectorAll(".unit-label").forEach(el => el.textContent = sym);
+      
+      // Update price input with current asset price
+      if (priceInput) {
+          priceInput.value = price.toFixed(2);
+          priceInput.placeholder = price.toFixed(2);
+      }
+      
+      document.getElementById("stat-high").textContent = "—";
+      document.getElementById("stat-low").textContent = "—";
+      document.getElementById("stat-vol").textContent = "—";
+      loadChart(price);
+      // Fetch real stats from API
+      fetch("/api/assets/")
+        .then((r) => r.json())
+        .then((d) => {
+          const a = d.assets.find((x) => x.symbol === sym);
+          if (a) {
+            // Always show market stats in USD
+            document.getElementById("stat-high").textContent =
+              "$" + parseFloat(a.high_24h).toLocaleString();
+            document.getElementById("stat-low").textContent =
+              "$" + parseFloat(a.low_24h).toLocaleString();
+            document.getElementById("stat-vol").textContent =
+              "$" + parseFloat(a.volume_24h).toLocaleString();
+          }
+        })
+        .catch(() => {});
+    }
+    pairSelect.addEventListener("change", switchPair);
+    switchPair();
+
+    clearInterval(liveTimer);
+    liveTimer = setInterval(tickLive, 1500);
+
+    // ── Timeframe buttons ─────────────────────────────────────
+    document.querySelectorAll(".tf-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document
+          .querySelectorAll(".tf-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const tfs = {
+          "1m": 60,
+          "5m": 300,
+          "15m": 900,
+          "1h": 3600,
+          "4h": 14400,
+          "1D": 86400,
+        };
+        const { data, vol } = generateCandles(
+          lastClose,
+          150,
+          tfs[btn.dataset.tf],
+        );
+        liveData = data;
+        liveVol = vol;
+        candleSeries.setData(data);
+        volSeries.setData(vol);
+      });
+    });
+
+    // ── Order Panel Logic ─────────────────────────────────────
+    if (buyBtn) {
+      buyBtn.addEventListener("click", () => {
+        buyBtn.classList.add("active");
+        sellBtn.classList.remove("active");
+        orderTypeField.value = "BUY";
+        submitBtn.textContent = "Place Buy Order";
+        submitBtn.className = "submit-order-btn buy-mode";
+      });
+      sellBtn.addEventListener("click", () => {
+        sellBtn.classList.add("active");
+        buyBtn.classList.remove("active");
+        orderTypeField.value = "SELL";
+        submitBtn.textContent = "Place Sell Order";
+        submitBtn.className = "submit-order-btn sell-mode";
+      });
+
+      // Order kind (Limit / Market)
+      document.querySelectorAll(".ok-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document
+            .querySelectorAll(".ok-btn")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const kind = btn.dataset.kind;
+          orderKindField.value = kind;
+
+          if (kind === "MARKET") {
+            priceField.style.opacity = "0.5";
+            priceInput.readOnly = true;
+            // Auto-fill price with current live price
+            const currentPrice = parseFloat(
+              document
+                .getElementById("live-price")
+                .textContent.replace(/[^0-9.]/g, ""),
+            );
+            priceInput.value = currentPrice.toFixed(2);
+            priceInput.required = false; // Market orders don't strictly require user input here
+          } else {
+            priceField.style.opacity = "1";
+            priceInput.readOnly = false;
+            priceInput.required = true;
+          }
+          calcTotal();
+        });
+      });
+
+      // Compute total
+      function calcTotal() {
+        const q = parseFloat(qtyInput.value) || 0;
+        let p = parseFloat(priceInput.value) || 0;
+
+        if (orderKindField.value === "MARKET") {
+          p =
+            parseFloat(
+              document
+                .getElementById("live-price")
+                .textContent.replace(/[^0-9.]/g, ""),
+            ) || 0;
+        }
+
+        orderTotalEl.textContent =
+          (q * p).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) + " USDT";
+      }
+      qtyInput.addEventListener("input", calcTotal);
+      priceInput.addEventListener("input", calcTotal);
+    }
+
+    // ── Mobile Responsive Helpers ─────────────────────────────
+    if (window.innerWidth <= 1024) {
+        // Example: Auto-scroll to Order form when side is picked
+        const scrollToOrder = () => {
+            document.querySelector('.order-panel').scrollIntoView({ behavior: 'smooth' });
+        };
+        if(buyBtn) buyBtn.addEventListener('click', scrollToOrder);
+        if(sellBtn) sellBtn.addEventListener('click', scrollToOrder);
+    }
+
+    // ── Bottom Tab Switching ──────────────────────────────────
+    document.querySelectorAll(".stab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document
+          .querySelectorAll(".stab")
+          .forEach((t) => t.classList.remove("active"));
+        document
+          .querySelectorAll(".stab-panel")
+          .forEach((p) => p.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.target).classList.add("active");
+      });
+    });
+  });
+</script>
+{% endblock %}

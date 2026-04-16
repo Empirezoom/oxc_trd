@@ -1,0 +1,129 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load currency_tags %}
+
+{% block title %}Investment History | OCTALX{% endblock %}
+
+{% block content %}
+<div class="page-container" style="max-width: 900px; margin: 0 auto;">
+    <div class="page-header" style="margin-bottom: 30px;">
+        <div>
+            <h1 class="page-title"><i class="fas fa-robot" style="color:var(--primary)"></i> Managed History</h1>
+            <p class="page-sub">Audit your algorithmic trading performance</p>
+        </div>
+        <div class="header-actions">
+            <div style="background: rgba(0,0,0,0.3); padding: 12px 20px; border-radius: 12px; border: 1px solid var(--border); text-align: right;">
+                <span style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase;">Total Managed Equity</span><br>
+                <span style="font-family: 'JetBrains Mono'; font-size: 18px; color: var(--success); font-weight: 800;">{% convert_price total_usd %}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEARCH BAR -->
+    <div class="search-wrap" style="margin-bottom: 25px; position: sticky; top: 75px; z-index: 100;">
+        <div style="position: relative;">
+            <i class="fas fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+            <input 
+                type="text" 
+                id="row-search" 
+                placeholder="Search by asset, action, status..." 
+                style="width: 100%; background: #1a1e26; border: 2px solid var(--border); border-radius: 12px; padding: 15px 15px 15px 45px; color: white; outline: none; transition: 0.3s;"
+                onkeyup="filterRows()"
+            >
+        </div>
+    </div>
+
+    <div id="grouped-container"></div>
+
+    <!-- HIDDEN SOURCE -->
+    <div style="display: none;">
+        <table id="source-table">
+            {% for t in trades %}
+            <tr class="data-row" 
+                data-date="{{ t.created_at|date:'M d, Y' }}"
+                data-time="{{ t.created_at|date:'H:i' }}"
+                data-action="{{ t.trade_action }}"
+                data-asset="{{ t.asset.name }} ({{ t.asset.symbol }})"
+                data-stake="{{ t.amount|floatformat:2 }}"
+                data-entry="{{ t.entry_price|floatformat:2 }}"
+                data-profit="{% if t.status == 'WON' %}{{ t.profit|floatformat:2 }}{% else %}0{% endif %}"
+                data-status="{{ t.status }}"
+                data-icon="{{ t.asset.icon_class }}"
+            >
+                <td>{{ t.asset.name }} {{ t.trade_action }} {{ t.status }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+<style>
+    .date-group-header { font-family: 'Cinzel', serif; font-size: 13px; color: var(--primary); margin: 35px 0 15px; padding-left: 10px; border-left: 3px solid var(--primary); }
+    .history-card { background: #0e1117; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    .history-card:active { transform: scale(0.98); }
+    .history-card .asset-info { display: flex; align-items: center; gap: 15px; }
+    .history-card .icon-circ { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+</style>
+
+<script>
+    function filterRows() {
+        const query = document.getElementById('row-search').value.toLowerCase();
+        const rows = document.querySelectorAll('.data-row');
+        const container = document.getElementById('grouped-container');
+        let grouped = {};
+        
+        const today = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+        const yesDate = new Date(); yesDate.setDate(yesDate.getDate() - 1);
+        const yesterday = yesDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+
+        rows.forEach(row => {
+            if (row.textContent.toLowerCase().includes(query)) {
+                let dateKey = row.dataset.date;
+                let displayKey = dateKey;
+                if (dateKey === today) displayKey = "Today";
+                else if (dateKey === yesterday) displayKey = "Yesterday";
+
+                if (!grouped[displayKey]) grouped[displayKey] = [];
+                grouped[displayKey].push({...row.dataset});
+            }
+        });
+        renderGrouped(grouped);
+    }
+
+    function renderGrouped(grouped) {
+        const container = document.getElementById('grouped-container');
+        container.innerHTML = '';
+        const keys = Object.keys(grouped);
+        if (keys.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding: 50px; opacity: 0.5;"><i class="fas fa-ghost fa-3x"></i><p style="margin-top:15px; font-weight:700;">No records found</p></div>`;
+            return;
+        }
+
+        keys.forEach(key => {
+            let html = `<div class="date-group-header">${key}</div>`;
+            grouped[key].forEach(d => {
+                const accent = d.status === 'WON' ? 'var(--success)' : (d.status === 'LOSS' ? 'var(--danger)' : '#ff9900');
+                const actionColor = d.action === 'BUY' ? 'var(--success)' : 'var(--danger)';
+                
+                html += `
+                    <div class="history-card" onclick='showGlobalModal("Managed Trade Details", ${JSON.stringify(d)})'>
+                        <div class="asset-info">
+                            <div class="icon-circ" style="color: ${accent}"><i class="${d.icon}"></i></div>
+                            <div>
+                                <div style="font-weight: 800; font-size: 14px;">${d.asset}</div>
+                                <div style="font-size: 10px; color: var(--text-secondary);">${d.time} &bull; <span style="color:${actionColor}; font-weight:800">${d.action}</span> @ ${d.entry}</div>
+                            </div>
+                        </div>
+                        <div class="amt-col" style="text-align: right;">
+                            <div style="font-weight: 800; font-size: 14px;">${window.OCTALX_CONFIG.prefSymbol}${(parseFloat(d.stake) * window.OCTALX_CONFIG.currencyRate).toLocaleString(undefined, {minimumFractionDigits:2})}</div>
+                            <div style="font-size: 10px; font-weight: 800; color: ${accent}"><i class="fas ${d.status === 'WON' ? 'fa-check' : (d.status === 'LOSS' ? 'fa-times' : 'fa-clock')}"></i> ${d.status}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML += html;
+        });
+    }
+    document.addEventListener("DOMContentLoaded", filterRows);
+</script>
+{% endblock %}

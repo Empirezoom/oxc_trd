@@ -1,0 +1,143 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Activity | OCTALX{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-clock-rotate-left" style="color: var(--primary);"></i> Activity Log</h1>
+            <p class="page-sub">Full history of your trades and transactions</p>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <form method="GET" class="filter-bar glass">
+        <div class="filter-group">
+            <label class="filter-label">View</label>
+            <select name="type" class="filter-sel" onchange="this.form.submit()">
+                <option value="all" {% if filter_type == 'all' %}selected{% endif %}>All Activity</option>
+                <option value="orders" {% if filter_type == 'orders' %}selected{% endif %}>Orders Only</option>
+                <option value="txns" {% if filter_type == 'txns' %}selected{% endif %}>Transactions Only</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label">Asset</label>
+            <select name="asset" class="filter-sel" onchange="this.form.submit()">
+                <option value="all">All Assets</option>
+                {% for asset in assets %}
+                <option value="{{ asset.symbol }}" {% if filter_asset == asset.symbol %}selected{% endif %}>{{ asset.symbol }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+
+    <!-- Orders Section -->
+    {% if filter_type != 'txns' %}
+    <div class="data-card glass" style="margin-top: 20px;">
+        <div class="dc-header">
+            <span class="dc-title">Order History</span>
+            <span class="dc-count">{{ orders|length }} orders</span>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Pair</th>
+                    <th>Side</th>
+                    <th>Type</th>
+                    <th class="right">Price</th>
+                    <th class="right">Qty</th>
+                    <th class="right">Total</th>
+                    <th class="right">Status</th>
+                    <th class="right">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td class="mono dim">{{ order.created_at|date:"Y-m-d H:i" }}</td>
+                    <td class="bold">{{ order.asset.symbol }}/USDT</td>
+                    <td class="{% if order.order_type == 'BUY' %}buy-text{% else %}sell-text{% endif %} bold">{{ order.order_type }}</td>
+                    <td class="dim">{{ order.order_kind }}</td>
+                    <td class="right mono">${{ order.price }}</td>
+                    <td class="right mono">{{ order.quantity }}</td>
+                    <td class="right mono bold">${{ order.total|floatformat:2 }}</td>
+                    <td class="right"><span class="badge badge-{{ order.status|lower }}">{{ order.status }}</span></td>
+                    <td class="right">
+                        {% if order.status == 'PENDING' %}
+                        <a href="{% url 'cancel_order' order.id %}" class="cancel-btn" onclick="return confirm('Cancel this order?')">
+                            <i class="fas fa-xmark"></i> Cancel
+                        </a>
+                        {% else %}
+                        <span class="dim">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <i class="fas fa-chart-line"></i>
+                            <p>No orders found. <a href="{% url 'index' %}">Start trading →</a></p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Transactions Section -->
+    {% if filter_type != 'orders' %}
+    <div class="data-card glass" style="margin-top: 20px;">
+        <div class="dc-header">
+            <span class="dc-title">Transaction History</span>
+            <span class="dc-count">{{ transactions|length }} transactions</span>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Asset</th>
+                    <th class="right">Amount</th>
+                    <th class="right">Status</th>
+                    <th class="right">Tx Hash</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in transactions %}
+                <tr>
+                    <td class="mono dim">{{ tx.timestamp|date:"Y-m-d H:i" }}</td>
+                    <td class="{% if tx.tx_type == 'DEPOSIT' %}buy-text{% else %}sell-text{% endif %} bold">{{ tx.tx_type }}</td>
+                    <td>
+                        <div class="asset-cell">
+                            <div class="asset-icon-sm" style="width: 24px; height: 24px; font-size: 11px;"><i class="{{ tx.asset.icon_class }}"></i></div>
+                            <span>{{ tx.asset.symbol }}</span>
+                        </div>
+                    </td>
+                    <td class="right mono">{{ tx.amount|floatformat:8 }}</td>
+                    <td class="right"><span class="badge badge-{{ tx.status|lower }}">{{ tx.status }}</span></td>
+                    <td class="right mono dim" style="font-size: 10px;">
+                        {% if tx.tx_hash %}{{ tx.tx_hash|truncatechars:20 }}{% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="fas fa-receipt"></i>
+                            <p>No transactions found. <a href="{% url 'wallet' %}">Visit Wallet →</a></p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

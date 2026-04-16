@@ -1,0 +1,76 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Terms of Service | OCTALX{% endblock %}
+
+{% block content %}
+<div class="page-container" style="max-width: 860px; margin: 0 auto;">
+    <div style="margin-bottom: 50px;">
+        <h1 class="page-title" style="margin-bottom: 8px;"><i class="fas fa-scale-balanced" style="color: var(--primary);"></i> Terms of Service</h1>
+        <p class="dim" style="font-size: 13px;">Last Updated: April 10, 2026 &nbsp;|&nbsp; Effective Immediately</p>
+    </div>
+
+    <div style="background: rgba(212,175,55,0.06); border: 1px solid rgba(212,175,55,0.2); padding: 20px 25px; border-radius: 8px; margin-bottom: 40px;">
+        <p style="font-size: 13px; line-height: 1.7; color: var(--text-secondary);">
+            <i class="fas fa-triangle-exclamation" style="color: var(--primary); margin-right: 8px;"></i>
+            <strong style="color: white;">Important Notice:</strong> Trading in financial markets involves significant risk. Please read these terms carefully before using the OctalX platform. By accessing or using our platform, you confirm that you have read, understood, and agreed to be bound by these terms.
+        </p>
+    </div>
+
+    {% for section in sections %}
+    <div class="data-card glass" style="padding: 35px; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--primary); font-family: 'Cinzel';">{{ section.title }}</h2>
+        <div style="color: var(--text-secondary); font-size: 14px; line-height: 1.9;">{{ section.body }}</div>
+    </div>
+    {% endfor %}
+
+    <!-- Static fallback content -->
+    {% if not sections %}
+    {% for item in "1234567" %}
+    {% endfor %}
+
+    <div class="data-card glass" style="padding: 35px; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--primary); font-family: 'Cinzel';">1. Acceptance of Terms</h2>
+        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.9;">By accessing and using the OctalX platform, you accept and agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, please do not use our services. OctalX reserves the right to modify these terms at any time, with changes taking effect immediately upon posting.</p>
+    </div>
+
+    <div class="data-card glass" style="padding: 35px; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--primary); font-family: 'Cinzel';">2. Eligibility Requirements</h2>
+        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.9;">You must be at least 18 years of age to use OctalX. By using the platform you represent and warrant that you are of legal age in your jurisdiction to form a binding contract. Residents of certain jurisdictions where cryptocurrency and forex trading is restricted or prohibited are not eligible to use this platform.</p>
+    </div>
+
+    <div class="data-card glass" style="padding: 35px; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--primary); font-family: 'Cinzel';">3. Account Registration & KYC</h2>
+        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.9;">When you register for an account, you agree to provide accurate, current, and complete information. You are required to complete the Know Your Customer (KYC) verification process to unlock full trading features and withdrawals. OctalX may suspend or terminate accounts that fail to maintain accurate profile information or complete KYC verification.</p>
+    </div>
+
+    <div class="data-card glass" style="padding: 35px; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--primary); font-family: 'Cinzel';">4. Trading Risks</h2>
+        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.9;">Trading in cryptocurrencies and forex involves substantial risk of loss and is not appropriate for every investor. The value of digital assets and currencies can be extremely volatile. Past performance is not indicative of future results. You should only trade with funds you can afford to lose. OctalX does not provide financial advice or investment recommendations.</p>
+    </div>
+
+    <div class="data-card glass" style="padding: 35px; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--primary); font-family: 'Cinzel';">5. Deposits, Withdrawals & Fees</h2>
+        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.9;">All deposits must be made to the designated wallet addresses provided in your account. Deposits are subject to blockchain confirmation times and internal verification. OctalX reserves the right to charge fees on trades, withdrawals, and other platform services. All fees will be clearly disclosed at the time of the relevant transaction.</p>
+    </div>
+
+    <div class="data-card glass" style="padding: 35px; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--primary); font-family: 'Cinzel';">6. Prohibited Conduct</h2>
+        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.9;">Users are prohibited from engaging in market manipulation, wash trading, money laundering, fraudulent activity, or any conduct that violates applicable laws. OctalX monitors all activity for suspicious behaviour and reserves the right to freeze accounts, withhold funds, and report activity to relevant authorities where legally required.</p>
+    </div>
+
+    <div class="data-card glass" style="padding: 35px; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--primary); font-family: 'Cinzel';">7. Limitation of Liability</h2>
+        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.9;">OctalX shall not be liable for any indirect, incidental, special, consequential or punitive damages, including loss of profits, arising from your use of the platform. Our total liability to you shall not exceed the amount of fees you have paid to us in the three months preceding the claim.</p>
+    </div>
+    {% endif %}
+
+    <div style="text-align: center; padding: 40px; color: var(--text-secondary); font-size: 13px;">
+        <p>Questions? Contact us at <a href="mailto:legal@octalx.com" style="color: var(--primary); text-decoration: none;">legal@octalx.com</a></p>
+        <div style="margin-top: 20px;">
+            <a href="{% url 'privacy' %}" style="color: var(--primary); text-decoration: none; margin: 0 15px;">Privacy Policy</a>
+            <a href="{% url 'index' %}" style="color: var(--text-secondary); text-decoration: none; margin: 0 15px;">Back to Platform</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

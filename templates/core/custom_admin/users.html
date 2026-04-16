@@ -1,0 +1,172 @@
+{% extends 'core/custom_admin/admin_base.html' %}
+
+{% block admin_title %}User Management{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-header">
+    <div>
+        <h1 class="admin-title">User <span style="color:var(--primary);">Management</span></h1>
+        <p class="admin-sub">View and manage trader accounts</p>
+    </div>
+</div>
+
+<div class="admin-search-wrap">
+    <div style="position: relative;">
+        <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+        <input type="text" id="admin-search" placeholder="Search by username, email, or status..." onkeyup="filterAdminRows()">
+    </div>
+</div>
+
+<div id="admin-card-container" class="admin-mobile-only"></div>
+
+<div class="data-card glass admin-desktop-only" style="padding: 0; overflow: hidden;">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Display Name</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th class="right">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in users %}
+            {% if not p.user.is_superuser %}
+            <tr class="data-row" 
+                data-user="{{ p.user.username }}"
+                data-name="{{ p.display_name|default:'-' }}"
+                data-email="{{ p.user.email }}"
+                data-status="{{ p.kyc_status }}"
+                data-joined="{{ p.user.date_joined|date:'M d, Y' }}"
+                data-blocked="{% if p.is_blocked %}BLOCKED{% elif p.is_suspended %}SUSPENDED{% endif %}"
+                data-detail-url="{% url 'custom_admin_user_detail' p.user.id %}"
+                data-kyc-pending="{% if p.kyc_status == 'PENDING' %}true{% endif %}"
+                data-uid="{{ p.user.id }}"
+            >
+                <td class="bold">{{ p.user.username }}</td>
+                <td>{{ p.display_name|default:"-" }}</td>
+                <td class="dim">{{ p.user.email }}</td>
+                <td>
+                    {% if p.is_blocked %}<span class="badge" style="background:#ff4d4d">Blocked</span>
+                    {% elif p.is_suspended %}<span class="badge" style="background:#ffa500">Suspended</span>
+                    {% elif p.kyc_status == 'VERIFIED' %}<span class="badge badge-filled">Verified</span>
+                    {% elif p.kyc_status == 'PENDING' %}<span class="badge badge-pending">Pending</span>
+                    {% else %}<span class="badge badge-cancelled">Unverified</span>{% endif %}
+                </td>
+                <td class="mono dim">{{ p.user.date_joined|date:"M d, Y" }}</td>
+                <td class="right">
+                    <a href="{% url 'custom_admin_user_detail' p.user.id %}" class="trade-btn-sm"><i class="fas fa-gear"></i> Manage</a>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+    @media (max-width: 991px) {
+        .admin-desktop-only { display: none; }
+        .admin-mobile-only { display: block; }
+    }
+    @media (min-width: 992px) {
+        .admin-mobile-only { display: none; }
+    }
+</style>
+
+<script>
+    function filterAdminRows() {
+        const query = document.getElementById('admin-search').value.toLowerCase();
+        const rows = document.querySelectorAll('.data-row');
+        const container = document.getElementById('admin-card-container');
+        
+        let html = '';
+        rows.forEach(row => {
+            const txt = row.textContent.toLowerCase();
+            if (txt.includes(query)) {
+                row.style.display = '';
+                const d = row.dataset;
+                html += `
+                    <div class="admin-table-card">
+                        <div class="atc-row" style="border-bottom: 2px solid rgba(255,255,255,0.05); padding-bottom: 12px; margin-bottom: 10px;">
+                            <span class="bold" style="font-size: 14px; color: var(--primary);">@${d.user}</span>
+                            <span class="badge" style="background: rgba(255,255,255,0.05);">${d.joined}</span>
+                        </div>
+                        <div class="atc-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                            <span class="atc-label">Profile Information</span>
+                            <div style="font-size: 13px; color: white; line-height: 1.4;">
+                                ${d.name} <br>
+                                <span class="dim" style="font-size: 11px;">${d.email}</span>
+                            </div>
+                        </div>
+                        <div class="atc-row">
+                            <span class="atc-label">Account Stat</span>
+                            <span>${d.blocked || `<span class="badge badge-filled">${d.status}</span>`}</span>
+                        </div>
+                        <div style="margin-top: 20px; display: flex; gap: 8px;">
+                            <a href="${d.detailUrl}" class="bc-btn" style="flex:1; text-align:center; padding: 12px; background: var(--bg-surface); border: 1px solid var(--border); font-size: 11px; font-weight: 800;">ADMIN PANEL</a>
+                            ${d.kycPending ? `<button onclick="document.getElementById('modal-kyc-${d.uid}').style.display='flex'" class="bc-btn" style="flex:1; background: var(--danger); color: white; padding: 12px; font-size: 11px; font-weight: 800; border: none;">REVEW KYC</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        container.innerHTML = html || '<div class="center dim" style="padding:40px;">No users found.</div>';
+    }
+    document.addEventListener('DOMContentLoaded', filterAdminRows);
+</script>
+{% endblock %}
+
+{% block extra_admin_modals %}
+{% for p in users %}
+{% if p.kyc_status == 'PENDING' %}
+<div id="modal-kyc-{{ p.user.id }}" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); padding: 20px;">
+    <div class="glass" style="width: 100%; max-width: 600px; padding: 40px; border-radius: 16px; position: relative; border: 1px solid rgba(255,255,255,0.1); max-height: 90vh; overflow-y: auto;">
+        <button onclick="document.getElementById('modal-kyc-{{ p.user.id }}').style.display='none';" style="position: absolute; right: 25px; top: 25px; background:transparent; border:none; color: var(--text-secondary); font-size: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h2 style="font-family: 'Cinzel'; color: white; margin-bottom: 5px;">KYC Verification Request</h2>
+            <p style="color: var(--text-secondary); font-size: 13px;">Submitted by <span style="color: white; font-weight: 700;">{{ p.user.username }}</span></p>
+        </div>
+        <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+            <h4 style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">Personal Profile</h4>
+            <div class="admin-form-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div><span class="dim" style="font-size:10px; text-transform:uppercase;">Full Display Name</span><br><span style="font-weight: 600;">{{ p.display_name|default:"Not Provided" }}</span></div>
+                <div><span class="dim" style="font-size:10px; text-transform:uppercase;">Phone Number</span><br><span style="font-weight: 600;">{{ p.phone|default:"Not Provided" }}</span></div>
+            </div>
+        </div>
+        <!-- (ID Docs continue...) -->
+        <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+            <h4 style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--danger); margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">Identification Documents</h4>
+            <div class="admin-form-grid" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div><span class="dim" style="font-size:10px; text-transform:uppercase;">Type</span><br><span style="font-weight: 600; text-transform: capitalize;">{{ p.kyc_id_type }}</span></div>
+                <div><span class="dim" style="font-size:10px; text-transform:uppercase;">Number</span><br><span class="mono" style="font-weight: 700; color: white;">{{ p.kyc_id_number }}</span></div>
+            </div>
+            
+            <div class="admin-form-grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <span class="dim" style="font-size:10px; text-transform:uppercase;">Front View</span>
+                    {% if p.kyc_id_front %}
+                    <a href="{{ p.kyc_id_front.url }}" target="_blank"><img src="{{ p.kyc_id_front.url }}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-top: 8px; border: 1px solid rgba(255,255,255,0.1);"></a>
+                    {% endif %}
+                </div>
+                <div>
+                    <span class="dim" style="font-size:10px; text-transform:uppercase;">Back View</span>
+                    {% if p.kyc_id_back %}
+                    <a href="{{ p.kyc_id_back.url }}" target="_blank"><img src="{{ p.kyc_id_back.url }}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-top: 8px; border: 1px solid rgba(255,255,255,0.1);"></a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="admin-form-grid" style="grid-template-columns: 1fr 2fr; gap: 15px;">
+            <a href="{% url 'admin_reject_kyc' p.user.id %}" class="bc-btn" style="text-align:center; padding: 14px; background: rgba(255,77,77,0.1); color: var(--danger); border: 1px solid rgba(255,77,77,0.3);">Reject</a>
+            <a href="{% url 'admin_verify_user' p.user.id %}" class="bc-btn" style="text-align:center; padding: 14px; background: var(--success); color: black;">Approve Verification</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

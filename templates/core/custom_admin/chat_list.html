@@ -1,0 +1,120 @@
+{% extends 'core/custom_admin/admin_base.html' %}
+
+{% block admin_content %}
+<div class="admin-page-header">
+    <div>
+        <h1 class="admin-title"><i class="fas fa-comments"></i> Broker Communications</h1>
+        <p class="admin-sub">Manage real-time chats with active traders</p>
+    </div>
+</div>
+
+<div class="admin-search-wrap">
+    <div style="position: relative;">
+        <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+        <input type="text" id="admin-search" placeholder="Search by trader name or username..." onkeyup="filterAdminRows()">
+    </div>
+</div>
+
+<div id="admin-card-container"></div>
+
+<!-- HIDDEN SOURCE TABLE FOR FILTERING -->
+<div style="display: none;">
+    <table class="data-table">
+        <tbody id="source-tbody">
+            {% for u in users %}
+            <tr class="data-row" 
+                data-id="{{ u.id }}"
+                data-username="{{ u.username }}"
+                data-name="{{ u.userprofile.display_name|default:u.username }}"
+                data-joined="{{ u.date_joined|date:'M d, Y' }}"
+                data-last="{{ u.last_msg|date:'M d, H:i' }}"
+                data-unread="{{ u.unread_count }}"
+            >
+                <td>{{ u.username }} {{ u.userprofile.display_name }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+    .chat-card {
+        background: #11141b;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: 0.3s;
+    }
+    .chat-card:hover { border-color: var(--danger); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .trader-info { display: flex; align-items: center; gap: 15px; }
+    .trader-avatar { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--border); }
+    .unread-badge { background: var(--danger); color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; position: absolute; top: -5px; right: -5px; border: 2px solid #11141b; }
+</style>
+
+<script>
+    function filterAdminRows() {
+        const query = document.getElementById('admin-search').value.toLowerCase();
+        const rows = document.querySelectorAll('.data-row');
+        const container = document.getElementById('admin-card-container');
+        
+        let html = '';
+        rows.forEach(row => {
+            const txt = row.textContent.toLowerCase();
+            if (txt.includes(query)) {
+                const d = row.dataset;
+                html += `
+                    <div class="chat-card">
+                        <div class="trader-info">
+                            <div style="position: relative;">
+                                <img src="https://api.dicebear.com/7.x/initials/svg?seed=${d.username}&backgroundColor=ff4d4d" class="trader-avatar">
+                                ${d.unread > 0 ? `<div class="unread-badge">${d.unread}</div>` : ''}
+                            </div>
+                            <div>
+                                <div style="font-weight: 800; color: white;">${d.name}</div>
+                                <div style="font-size: 11px; color: var(--text-secondary);">@${d.username} &bull; ${d.joined}</div>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 8px;">Last Active: ${d.last}</div>
+                            <a href="/et-admin/chat/${d.id}/" class="bc-btn" style="padding: 8px 15px; font-size: 11px; font-weight: 800; background: var(--primary); color: black;">OPEN PORTAL</a>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+        container.innerHTML = html || '<div class="center dim" style="padding:40px;">No discussions found.</div>';
+    }
+
+    async function updateChatList() {
+        try {
+            const r = await fetch('{% url "api_admin_chat_list" %}');
+            const d = await r.json();
+            const sourceTbody = document.getElementById('source-tbody');
+            
+            let sourceHtml = '';
+            d.users.forEach(u => {
+                sourceHtml += `
+                <tr class="data-row" 
+                    data-id="${u.id}"
+                    data-username="${u.username}"
+                    data-name="${u.display_name}"
+                    data-joined="Recent"
+                    data-last="${u.last_msg_time}"
+                    data-unread="${u.unread_count}"
+                >
+                    <td>${u.username} ${u.display_name}</td>
+                </tr>`;
+            });
+            sourceTbody.innerHTML = sourceHtml;
+            filterAdminRows(); // Re-render cards
+        } catch(e) {}
+    }
+
+    document.addEventListener('DOMContentLoaded', filterAdminRows);
+    setInterval(updateChatList, 10000);
+</script>
+{% endblock %}

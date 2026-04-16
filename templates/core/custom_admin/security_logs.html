@@ -1,0 +1,175 @@
+{% extends 'core/custom_admin/admin_base.html' %}
+{% load static %}
+
+{% block admin_title %}Security & IP Logs{% endblock %}
+
+{% block admin_content %}
+<div class="admin-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+        <div style="flex: 1; min-width: 250px;">
+            <h2 style="margin: 0; font-size: 20px; color: white;">Global Security Monitoring</h2>
+            <p style="margin: 5px 0 0; color: var(--text-secondary); font-size: 13px;">Tracking institutional access, IP addresses, and user activity</p>
+        </div>
+        
+        <form method="GET" style="flex: 1; display: flex; gap: 10px; min-width: 250px;">
+            <div style="position: relative; flex: 1;">
+                <i class="fas fa-search" style="position: absolute; left: 12px; top: 12px; color: var(--text-secondary); font-size: 14px;"></i>
+                <input type="text" name="q" value="{{ q }}" placeholder="Search User, Email, or Trader ID..." 
+                    style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 15px 10px 40px; color: white; font-size: 13px;">
+            </div>
+            <button type="submit" class="btn-primary" style="padding: 10px 15px; border-radius: 8px; font-size: 13px;">Filter</button>
+        </form>
+
+        <div class="security-badge desktop-only" style="background: rgba(246, 70, 93, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 8px 15px; border-radius: 6px; font-size: 11px; font-weight: 800;">
+            <i class="fas fa-shield-virus"></i> REAL-TIME MONITORING ACTIVE
+        </div>
+    </div>
+
+    <div class="table-container desktop-only">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>User / Trader ID</th>
+                    <th>Last Known IP Address</th>
+                    <th>Access Timestamp (UTC)</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in profiles %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img src="https://api.dicebear.com/7.x/initials/svg?seed={{ profile.user.username }}&backgroundColor=ff4d4d&fontColor=ffffff" style="width: 32px; height: 32px; border-radius: 50%;">
+                            <div>
+                                <div style="color: white; font-weight: 700;">{{ profile.user.username }}</div>
+                                <div style="font-size: 10px; color: var(--text-secondary);">ID: {{ profile.trader_id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span style="font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px; color: var(--primary);">
+                            {{ profile.last_login_ip|default:"Internal / Legacy" }}
+                        </span>
+                    </td>
+                    <td style="font-size: 13px;">
+                        {{ profile.last_login_at|date:"M d, Y | H:i:s" }}
+                    </td>
+                    <td>
+                        {% if profile.is_blocked %}
+                        <span class="badge badge-danger">Blocked</span>
+                        {% elif profile.is_suspended %}
+                        <span class="badge badge-warning">Suspended</span>
+                        {% else %}
+                        <span class="badge badge-success">Active</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'custom_admin_user_detail' profile.user.id %}" class="btn-icon" title="View Profile">
+                            <i class="fas fa-user-gear"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 50px; color: var(--text-secondary);">
+                        <i class="fas fa-search" style="font-size: 30px; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
+                        No security logs recorded yet. Once users log in, their IP data will appear here.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Mobile-First Card Layout -->
+    <div class="mobile-only">
+        {% for profile in profiles %}
+        <div class="security-card-mobile" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <img src="https://api.dicebear.com/7.x/initials/svg?seed={{ profile.user.username }}&backgroundColor=ff4d4d&fontColor=ffffff" style="width: 38px; height: 38px; border-radius: 50%;">
+                    <div>
+                        <div style="color: white; font-weight: 800; font-size: 15px;">{{ profile.user.username }}</div>
+                        <div style="font-size: 10px; color: var(--text-secondary);">Trader ID: {{ profile.trader_id }}</div>
+                    </div>
+                </div>
+                <a href="{% url 'custom_admin_user_detail' profile.user.id %}" class="btn-icon">
+                    <i class="fas fa-user-gear"></i>
+                </a>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 8px;">
+                    <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">IP Address</span>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--primary);">{{ profile.last_login_ip|default:"--" }}</span>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 8px;">
+                    <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Last Access</span>
+                    <span style="font-size: 11px; color: white;">{{ profile.last_login_at|date:"M d | H:i:s" }}</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Status</span>
+                    {% if profile.is_blocked %}
+                    <span class="badge badge-danger">Blocked</span>
+                    {% elif profile.is_suspended %}
+                    <span class="badge badge-warning">Suspended</span>
+                    {% else %}
+                    <span class="badge badge-success">Active</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+            No records found.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .mobile-only { display: none; }
+    @media (max-width: 768px) {
+        .desktop-only { display: none; }
+        .mobile-only { display: block; }
+        .admin-card { padding: 15px !important; margin: -10px !important; border-radius: 0 !important; min-height: 100vh; }
+    }
+
+    .security-badge {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    .badge {
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+    .badge-success { background: rgba(0, 223, 130, 0.1); color: #00df82; border: 1px solid #00df82; }
+    .badge-danger { background: rgba(246, 70, 93, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+    .badge-warning { background: rgba(255, 170, 0, 0.1); color: #ffaa00; border: 1px solid #ffaa00; }
+    
+    .btn-icon {
+        background: rgba(255,255,255,0.05);
+        color: white;
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: 0.2s;
+    }
+    .btn-icon:hover { background: var(--primary); color: #07090d; }
+</style>
+{% endblock %}

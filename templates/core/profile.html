@@ -1,0 +1,349 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Profile & Settings | OCTALX{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-gear" style="color: var(--primary);"></i> Settings</h1>
+            <p class="page-sub">Manage your account and preferences</p>
+        </div>
+    </div>
+
+    <style>
+        .settings-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 30px;
+        }
+        .settings-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 20px;
+            height: fit-content;
+        }
+        .settings-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 991px) {
+            .settings-layout {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .settings-nav {
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 10px;
+                white-space: nowrap;
+                scrollbar-width: none;
+            }
+            .snav-item {
+                padding: 10px 20px !important;
+                font-size: 12px;
+            }
+            .settings-form-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .sf-field {
+                grid-column: span 1 !important;
+            }
+            .profile-head {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+        }
+    </style>
+
+    <div class="settings-layout">
+        <!-- Sidebar Nav -->
+        <nav class="settings-nav glass">
+            <button class="snav-item active" data-target="profile-tab">
+                <i class="fas fa-user"></i> My Profile
+            </button>
+            <button class="snav-item" data-target="security-tab">
+                <i class="fas fa-shield-halved"></i> Security
+            </button>
+            <button class="snav-item" data-target="verify-tab">
+                <i class="fas fa-id-card"></i> Verification
+            </button>
+            <button class="snav-item" data-target="api-tab">
+                <i class="fas fa-key"></i> API Keys
+            </button>
+        </nav>
+
+        <!-- Content Panels -->
+        <div class="settings-content">
+
+            <!-- Profile Tab -->
+            <div id="profile-tab" class="stab-panel active">
+                <div class="profile-card glass">
+                    <!-- Avatar + Status -->
+                    <div class="profile-head">
+                        {% if profile.profile_picture %}
+                        <img src="{{ profile.profile_picture.url }}" alt="Avatar" class="profile-avatar" style="object-fit: cover;">
+                        {% else %}
+                        <img src="https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}&backgroundColor=d4af37&fontColor=07090d&size=100" alt="Avatar" class="profile-avatar">
+                        {% endif %}
+                        <div class="profile-head-info">
+                            <h2>{{ profile.display_name|default:user.username }}</h2>
+                            <span>@{{ user.username }}</span>
+                            <div style="margin-top: 8px;">
+                                {% if profile.is_verified %}
+                                <span class="badge badge-filled">✓ KYC Verified</span>
+                                {% else %}
+                                <span class="badge badge-pending">Unverified</span>
+                                {% endif %}
+                                <span class="dim" style="font-size: 11px; margin-left: 10px; font-family: 'JetBrains Mono';">ID #{{ profile.trader_id|default:user.id|stringformat:"s" }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{% url 'profile' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_profile">
+                        <div class="settings-form-grid">
+                            <div class="sf-field">
+                                <label>Display Name</label>
+                                <input type="text" name="display_name" class="m-input" value="{{ profile.display_name }}">
+                            </div>
+                            <div class="sf-field">
+                                <label>Email Address</label>
+                                <input type="email" name="email" class="m-input" value="{{ user.email }}">
+                            </div>
+                            <div class="sf-field">
+                                <label>Phone Number</label>
+                                <input type="text" name="phone" class="m-input" value="{{ profile.phone }}" placeholder="+234 000 0000 000">
+                            </div>
+                            <div class="sf-field">
+                                <label>Preferred Currency</label>
+                                <select name="preferred_currency" class="m-input" onchange="this.form.submit()">
+                                    <option value="USD" {% if profile.preferred_currency == 'USD' %}selected{% endif %}>USD — US Dollar</option>
+                                    <option value="NGN" {% if profile.preferred_currency == 'NGN' %}selected{% endif %}>NGN — Nigerian Naira</option>
+                                    <option value="EUR" {% if profile.preferred_currency == 'EUR' %}selected{% endif %}>EUR — Euro</option>
+                                    <option value="GBP" {% if profile.preferred_currency == 'GBP' %}selected{% endif %}>GBP — British Pound</option>
+                                </select>
+                            </div>
+                            <div class="sf-field">
+                                <label>Profile Picture</label>
+                                <input type="file" id="instant-avatar-upload" name="profile_pic" class="m-input" accept="image/*" style="padding: 10px;">
+                                <p class="dim" style="font-size: 10px; margin-top: 4px;">Photo will update instantly upon selection.</p>
+                            </div>
+                            <div class="sf-field" style="grid-column: span 2;">
+                                <label>Bio (Public)</label>
+                                <textarea name="bio" class="m-input" rows="3" placeholder="Tell traders who you are...">{{ profile.bio }}</textarea>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="submit-order-btn buy-mode" style="width: auto; padding: 12px 30px;">Save Profile</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Security Tab -->
+            <div id="security-tab" class="stab-panel">
+                <div class="profile-card glass">
+                    <h3 style="margin-bottom: 25px; font-family: 'Cinzel';">Change Password</h3>
+                    <form method="POST" action="{% url 'profile' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="change_password">
+                        <div class="settings-form-grid">
+                            <div class="sf-field">
+                                <label>Current Password</label>
+                                <input type="password" name="old_password" class="m-input" required>
+                            </div>
+                            <div class="sf-field">
+                                <label>New Password</label>
+                                <input type="password" name="new_password1" class="m-input" required>
+                            </div>
+                            <div class="sf-field">
+                                <label>Confirm New Password</label>
+                                <input type="password" name="new_password2" class="m-input" required>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="submit-order-btn buy-mode" style="width: auto; padding: 12px 30px;">Update Password</button>
+                        </div>
+                    </form>
+
+                    <hr style="border: 0; border-top: 1px solid var(--border); margin: 30px 0;">
+                    <h3 style="margin-bottom: 15px; font-family: 'Cinzel';">Two-Factor Authentication</h3>
+                    <div class="tfa-status">
+                        <span class="badge badge-cancelled">Disabled</span>
+                        <p class="dim" style="margin-top: 10px; font-size: 12px;">2FA adds an extra layer of security to your account (coming soon).</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verification Tab -->
+            <div id="verify-tab" class="stab-panel">
+                <div class="profile-card glass">
+                    <h3 style="margin-bottom: 10px; font-family: 'Cinzel';">Identity Verification (KYC)</h3>
+                    <p class="dim" style="font-size: 13px; margin-bottom: 30px;">Verify your identity to unlock higher trading limits and withdrawals.</p>
+
+                    <div class="kyc-status-card">
+                        <i class="fas fa-user-shield" style="font-size: 36px; color: {% if profile.kyc_status == 'VERIFIED' %}var(--success){% elif profile.kyc_status == 'PENDING' %}#4da6ff{% else %}var(--primary){% endif %};"></i>
+                        <div>
+                            <div style="font-weight: 700; margin-bottom: 5px;">
+                                {% if profile.kyc_status == 'VERIFIED' %}
+                                Account Verified ✓
+                                {% elif profile.kyc_status == 'PENDING' %}
+                                Verification In Review
+                                {% else %}
+                                Verification Required
+                                {% endif %}
+                            </div>
+                            <div class="dim" style="font-size: 12px;">
+                                {% if profile.kyc_status == 'VERIFIED' %}
+                                Your account is fully verified.
+                                {% elif profile.kyc_status == 'PENDING' %}
+                                Your documents are currently being processed by administrators.
+                                {% else %}
+                                Submit a government-issued ID to verify.
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% if profile.kyc_status == 'UNVERIFIED' %}
+                    <div style="margin-top: 20px;">
+                        <form method="POST" action="{% url 'profile' %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="submit_kyc">
+                            <div class="settings-form-grid">
+                                <div class="sf-field">
+                                    <label>ID Document Type</label>
+                                    <select name="id_type" class="m-input" required>
+                                        <option value="passport">International Passport</option>
+                                        <option value="national_id">National Identity Card</option>
+                                        <option value="drivers_license">Driver's License</option>
+                                    </select>
+                                </div>
+                                <div class="sf-field">
+                                    <label>ID Number</label>
+                                    <input type="text" name="id_number" class="m-input" placeholder="e.g. A1234567" required>
+                                </div>
+                                <div class="sf-field">
+                                    <label>Upload ID (Front)</label>
+                                    <input type="file" name="id_front" class="m-input" accept="image/*" required style="padding: 10px;">
+                                </div>
+                                <div class="sf-field">
+                                    <label>Upload ID (Back)</label>
+                                    <input type="file" name="id_back" class="m-input" accept="image/*" required style="padding: 10px;">
+                                </div>
+                            </div>
+                            <button type="submit" class="submit-order-btn buy-mode" style="width: auto; padding: 12px 30px; margin-top: 20px;"><i class="fas fa-upload"></i> Submit for Review</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- API Keys Tab -->
+            <div id="api-tab" class="stab-panel">
+                <div class="profile-card glass">
+                    <h3 style="margin-bottom: 10px; font-family: 'Cinzel';">API Management</h3>
+                    <p class="dim" style="font-size: 13px; margin-bottom: 25px;">Use API keys to connect algorithmic trading bots or external tools.</p>
+
+                    <div class="api-key-box">
+                        <div class="api-key-row">
+                            <span class="filter-label">API Key</span>
+                            <span class="mono" style="font-size: 12px; color: var(--text-secondary);" id="api-key-display">ET-••••••••••••••••••••••••••••••••</span>
+                            <button class="cancel-btn" onclick="toggleKey()"><i class="fas fa-eye"></i></button>
+                        </div>
+                        <div class="api-key-row" style="margin-top: 10px;">
+                            <span class="filter-label">Secret Key</span>
+                            <span class="mono" style="font-size: 12px; color: var(--text-secondary);">SK-••••••••••••••••••••••••••••••••</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px; display: flex; gap: 10px;">
+                        <button class="submit-order-btn buy-mode" style="width: auto; padding: 10px 25px; font-size: 11px;" onclick="generateKey()">Generate New Key</button>
+                        <button class="submit-order-btn sell-mode" style="width: auto; padding: 10px 25px; font-size: 11px;" onclick="revokeKeys()">Revoke Keys</button>
+                    </div>
+                    <p class="dim" style="font-size: 11px; margin-top: 15px;"><i class="fas fa-triangle-exclamation"></i> Never share your API secret key with anyone.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.snav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.snav-item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.stab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.target).classList.add('active');
+    });
+});
+
+function toggleKey() {
+    const el = document.getElementById('api-key-display');
+    if (el.textContent.includes('•')) {
+        el.textContent = 'ET-A9F2B3C4D5E6F7A8B9C0D1E2F3A4B5C6';
+        el.style.color = 'var(--primary)';
+    } else {
+        el.textContent = 'ET-••••••••••••••••••••••••••••••••';
+        el.style.color = 'var(--text-secondary)';
+    }
+}
+
+function generateKey() {
+    const chars = 'ABCDEF0123456789';
+    let key = 'ET-';
+    for(let i=0; i<32; i++) key += chars.charAt(Math.floor(Math.random() * chars.length));
+    const el = document.getElementById('api-key-display');
+    el.textContent = key;
+    el.style.color = 'var(--primary)';
+    alert("New API Key generated successfully. Please store it securely.");
+}
+
+function revokeKeys() {
+    if(confirm("Are you sure you want to revoke all API keys? This will disconnect all active trading bots.")) {
+        const el = document.getElementById('api-key-display');
+        el.textContent = 'ET-••••••••••••••••••••••••••••••••';
+        el.style.color = 'var(--text-secondary)';
+    }
+}
+
+// Instant Avatar Upload
+const avatarInput = document.getElementById('instant-avatar-upload');
+if (avatarInput) {
+    avatarInput.addEventListener('change', async function() {
+        const file = this.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('profile_pic', file);
+
+        try {
+            const r = await fetch('{% url "api_upload_avatar" %}', {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                body: formData
+            });
+            const d = await r.json();
+            if (d.status === 'ok') {
+                // Update all avatars on page
+                document.querySelectorAll('.profile-avatar, .user-pill img').forEach(img => {
+                    img.src = d.url;
+                });
+            }
+        } catch(e) {
+            console.error('Error uploading image.');
+        }
+    });
+}
+</script>
+{% endblock %}

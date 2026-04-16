@@ -1,0 +1,123 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | OCTALX</title>
+    <meta name="description" content="Sign in to your OctalX account.">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
+<body class="auth-body">
+    <div class="auth-wrapper">
+        <!-- Left Visual Panel -->
+        <div class="auth-visual">
+            <div class="av-overlay"></div>
+            <div class="av-content">
+                <div class="auth-logo">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width: 44px; height: 44px; margin-right: 18px; filter: drop-shadow(0 0 15px var(--primary-glow));">
+                        <path d="M20 40 L50 10 L80 40" fill="none" stroke="var(--primary)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M20 60 L50 90 L80 60" fill="none" stroke="var(--primary)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>OCTAL</span>X
+                </div>
+                <h2 class="av-tagline">Your Gateway to<br>Global Markets</h2>
+                <p class="av-sub">Access crypto, forex, and digital assets with institutional-grade tools and real-time execution.</p>
+                <div class="av-stats">
+                    <div class="av-stat">
+                        <span class="av-stat-val">$2.4T</span>
+                        <span class="av-stat-label">Daily Volume</span>
+                    </div>
+                    <div class="av-stat-sep"></div>
+                    <div class="av-stat">
+                        <span class="av-stat-val">150+</span>
+                        <span class="av-stat-label">Asset Pairs</span>
+                    </div>
+                    <div class="av-stat-sep"></div>
+                    <div class="av-stat">
+                        <span class="av-stat-val">0.01%</span>
+                        <span class="av-stat-label">Min Fees</span>
+                    </div>
+                </div>
+                <div class="av-ticker">
+                    <div class="ticker-item"><span class="ticker-sym">BTC</span><span class="ticker-price positive">$68,450</span><span class="ticker-chg positive">+2.1%</span></div>
+                    <div class="ticker-item"><span class="ticker-sym">ETH</span><span class="ticker-price negative">$3,450</span><span class="ticker-chg negative">-0.8%</span></div>
+                    <div class="ticker-item"><span class="ticker-sym">SOL</span><span class="ticker-price positive">$145</span><span class="ticker-chg positive">+5.4%</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Form Panel -->
+        <div class="auth-form-panel">
+            <div class="auth-form-inner">
+                <div class="auth-form-header">
+                    <h1>Welcome Back</h1>
+                    <p>Sign in to your trading account</p>
+                </div>
+
+                <!-- OCTALX Elite Promo Advert -->
+                <div style="background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(0,0,0,0.4)); border: 1px solid rgba(212,175,55,0.2); border-radius: 12px; padding: 18px; margin-bottom: 30px; display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                    <div style="width: 45px; height: 45px; background: rgba(212,175,55,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--primary);"><i class="fas fa-crown"></i></div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 11px; font-weight: 800; color: white; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">OctalX Elite Brokerage</div>
+                        <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.4;">
+                            Unlock <strong>450%+</strong> returns with managed AI capital. Premium tiers now open.
+                        </div>
+                    </div>
+                </div>
+
+                {% if error %}
+                <div class="auth-error">
+                    <i class="fas fa-circle-exclamation"></i> {{ error }}
+                </div>
+                {% endif %}
+
+                <form method="POST" action="{% url 'login' %}" class="auth-form" id="login-form">
+                    {% csrf_token %}
+                    <div class="auth-field">
+                        <label for="username"><i class="fas fa-user"></i> Username</label>
+                        <input type="text" id="username" name="username" class="auth-input" placeholder="Enter your username" required autofocus>
+                    </div>
+                    <div class="auth-field">
+                        <label for="password"><i class="fas fa-lock"></i> Password</label>
+                        <div class="password-wrap">
+                            <input type="password" id="password" name="password" class="auth-input" placeholder="Enter your password" required>
+                            <button type="button" class="pw-toggle" onclick="togglePw('password')"><i class="fas fa-eye" id="pw-icon"></i></button>
+                        </div>
+                    </div>
+                    <div class="auth-meta">
+                        <label class="check-label">
+                            <input type="checkbox" name="remember"> Remember me
+                        </label>
+                        <a href="{% url 'forgot_password' %}" class="auth-link">Forgot Password?</a>
+                    </div>
+                    <button type="submit" class="auth-submit-btn">
+                        <i class="fas fa-right-to-bracket"></i> Access Terminal
+                    </button>
+                </form>
+
+                <div class="auth-footer-text">
+                    Don't have an account? <a href="{% url 'signup' %}" class="auth-link">Create one now →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function togglePw(fieldId) {
+        const input = document.getElementById(fieldId);
+        const icon = document.getElementById('pw-icon');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    }
+    </script>
+</body>
+</html>

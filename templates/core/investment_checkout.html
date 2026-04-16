@@ -1,0 +1,182 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-container glass">
+    <div class="page-header" style="text-align: center; display: block; margin-bottom: 40px;">
+        <h1 class="page-title" style="font-size: 28px; letter-spacing: 2px;">SECURE BROKERAGE <span style="color:var(--primary);">DEPOSIT</span></h1>
+        <p class="page-sub">Finalize your {{ plan }} plan subscription</p>
+    </div>
+
+    <style>
+        .checkout-grid {
+            max-width: 900px; 
+            margin: 0 auto; 
+            display: grid; 
+            grid-template-columns: 1.2fr 1fr; 
+            gap: 40px;
+        }
+        @media (max-width: 768px) {
+            .checkout-grid {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+            .page-container {
+                padding: 20px 10px;
+            }
+            .data-card {
+                padding: 20px !important;
+                border-radius: 20px !important;
+            }
+        }
+    </style>
+
+    <div class="checkout-grid">
+        
+        <!-- Left Column: Instructions & Payment -->
+        <div>
+            <div class="data-card glass" style="padding: 30px; margin-bottom: 25px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Selected Plan</div>
+                        <div class="bold" style="font-size: 20px; color: var(--primary);">{{ plan }}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Exact Amount</div>
+                        <div class="bold" style="font-size: 20px; font-family: 'JetBrains Mono';">${{ amount }}</div>
+                    </div>
+                </div>
+
+                <div class="kyc-status-card" style="margin-bottom: 25px; background: rgba(0,0,0,0.3);">
+                    <i class="fas fa-info-circle" style="color: var(--primary); font-size: 20px;"></i>
+                    <div style="font-size: 11px; line-height: 1.5; color: var(--text-secondary);">
+                        Please send exactly <strong style="color:white;">${{ amount }}</strong> worth of your preferred crypto to the address below. Once paid, upload your transaction receipt.
+                    </div>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="plan_name" value="{{ plan }}">
+                    <input type="hidden" name="amount" value="{{ amount }}">
+                    
+                    <div class="sf-field" style="margin-bottom: 25px;">
+                        <label>Deployment Asset</label>
+                        <select name="asset_symbol" id="checkout-asset-select" class="m-input" required style="width: 100%; height: 55px; font-weight: 800; border-color: var(--primary);">
+                            {% for a in assets %}
+                            <option value="{{ a.symbol }}" 
+                                    data-addr="{{ a.deposit_address }}" 
+                                    data-network="{{ a.network }}"
+                                    data-icon="{% if a.icon_url %}{{ a.icon_url }}{% else %}https://api.dicebear.com/7.x/identicon/svg?seed={{ a.symbol }}{% endif %}"
+                                    data-memo="{{ a.memo_tag|default:'' }}">
+                                {{ a.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- ── DYNAMIC NETWORK WARNING SECTOR ────────────────── -->
+                    <div id="network-warning-box" style="margin-bottom: 25px; padding: 15px; background: rgba(212,175,55,0.05); border-left: 3px solid var(--primary); border-radius: 4px; display: flex; align-items: flex-start; gap: 12px;">
+                        <div id="asset-logo-container" style="width: 32px; height: 32px; flex-shrink: 0; background: rgba(0,0,0,0.4); border-radius: 50%; padding: 4px; border: 1px solid var(--border);">
+                            <img id="selected-asset-logo" src="" alt="" style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; font-weight: 800; color: white; text-transform: uppercase; margin-bottom: 4px;">Protocol Requirement</div>
+                            <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
+                                Ensure you only send capital via the <strong id="warning-network-name" style="color:var(--primary);">...</strong> network. Deposits via other protocols will be lost.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="api-key-box" style="margin-bottom: 25px; padding: 25px; background: rgba(0,0,0,0.4); border: 1px dashed var(--border);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Direct Wallet Link</span>
+                            <span id="asset-network-tag" class="bold" style="font-size: 10px; color: var(--primary); background: rgba(212,175,55,0.1); padding: 2px 8px; border-radius: 4px;">...</span>
+                        </div>
+                        <div id="deposit-addr-display" class="mono bold" style="font-size: 13px; word-break: break-all; color: white;">...</div>
+                        
+                        <!-- ── DYNAMIC MEMO TAG SECTOR ────────────────── -->
+                        <div id="memo-tag-container" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); display: none;">
+                            <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">Network Remark / Memo Tag</div>
+                            <div id="memo-tag-display" class="mono bold" style="font-size: 13px; color: var(--primary);">...</div>
+                        </div>
+
+                        <button type="button" onclick="copyAddr()" style="margin-top: 15px; background: transparent; border: 1px solid var(--border); color: white; padding: 8px 15px; border-radius: 4px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-copy"></i> Copy Address
+                        </button>
+                    </div>
+
+                    <div class="sf-field" style="margin-bottom: 25px;">
+                        <label>Upload Payment Receipt (Screenshot)</label>
+                        <input type="file" name="receipt_image" class="m-input" accept="image/*" required style="padding: 12px;">
+                    </div>
+
+                    <button type="submit" class="bc-btn" style="width: 100%; height: 50px;">
+                        <i class="fas fa-paper-plane"></i> Submit Payment Proof
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column: Visual Confirmation -->
+        <div>
+            <div class="data-card glass" style="padding: 30px; text-align: center;">
+                <h3 style="font-family: 'Cinzel'; font-size: 16px; margin-bottom: 25px;">SCAN TO PAY</h3>
+                <div style="background: white; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 25px;">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=0x71C7656EC7ab88b098defB751B7401B5f6d8976F" id="qr-display" alt="QR Code" style="width: 180px; height: 180px; display: block;">
+                </div>
+                <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px;">
+                    <h4 style="font-size: 12px; color: white; margin-bottom: 10px;">Security Check</h4>
+                    <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+                        <li style="font-size: 11px; color: var(--text-secondary); display: flex; gap: 8px;"><i class="fas fa-lock" style="color:var(--success);"></i> Fully encrypted transaction</li>
+                        <li style="font-size: 11px; color: var(--text-secondary); display: flex; gap: 8px;"><i class="fas fa-shield-check" style="color:var(--success);"></i> Escrow protection enabled</li>
+                        <li style="font-size: 11px; color: var(--text-secondary); display: flex; gap: 8px;"><i class="fas fa-clock" style="color:var(--primary);"></i> Typical verification: 15-30m</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const assetSelect = document.getElementById('checkout-asset-select');
+    const addrDisplay = document.getElementById('deposit-addr-display');
+    const netTag = document.getElementById('asset-network-tag');
+    const warningNet = document.getElementById('warning-network-name');
+    const assetLogo = document.getElementById('selected-asset-logo');
+    const qrDisplay = document.getElementById('qr-display');
+    const memoContainer = document.getElementById('memo-tag-container');
+    const memoDisplay = document.getElementById('memo-tag-display');
+
+    function updateDisplay() {
+        const option = assetSelect.options[assetSelect.selectedIndex];
+        const addr = option.getAttribute('data-addr');
+        const net = option.getAttribute('data-network');
+        const icon = option.getAttribute('data-icon');
+        const memo = option.getAttribute('data-memo');
+        
+        addrDisplay.textContent = addr;
+        netTag.textContent = net;
+        warningNet.textContent = net;
+        assetLogo.src = icon;
+        qrDisplay.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${addr}`;
+
+        if (memo && memo.trim().length > 0) {
+            memoContainer.style.display = 'block';
+            memoDisplay.textContent = memo;
+        } else {
+            memoContainer.style.display = 'none';
+        }
+    }
+
+    assetSelect.addEventListener('change', updateDisplay);
+    window.onload = updateDisplay; // Initialize on load
+
+    function copyAddr() {
+        navigator.clipboard.writeText(addrDisplay.textContent);
+        alert('Address copied to clipboard!');
+    }
+</script>
+{% endblock %}

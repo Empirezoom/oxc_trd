@@ -1,0 +1,173 @@
+{% extends 'core/custom_admin/admin_base.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="page-header" style="flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 30px;">
+    <div>
+        <h1 class="page-title" style="font-size: 28px;">Trader <span style="color:var(--primary);">Intelligence</span></h1>
+        <p class="page-sub">Deep-dive analysis: {{ profile.user.username }}</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <a href="{% url 'admin_chat_detail' profile.user.id %}" class="trade-btn-sm" style="background: var(--primary); color: black;">
+            <i class="fas fa-comment"></i> Chat
+        </a>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    
+    <!-- Profile & Status -->
+    <div style="display: flex; flex-direction: column; gap: 30px;">
+        <div class="data-card glass" style="padding: 30px; text-align: center;">
+            <div style="width: 100px; height: 100px; background: rgba(255,255,255,0.05); border-radius: 50%; border: 2px solid var(--primary); margin: 0 auto 15px; overflow: hidden;">
+                {% if profile.profile_picture %}
+                <img src="{{ profile.profile_picture.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                <div style="line-height: 100px; font-size: 32px; font-weight: 800;">{{ profile.user.username|slice:":1"|upper }}</div>
+                {% endif %}
+            </div>
+            <h3 style="margin-bottom: 5px;">{{ profile.display_name|default:profile.user.username }}</h3>
+            <p class="dim" style="font-size: 12px; margin-bottom: 15px;">{{ profile.user.email }}</p>
+            <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+                <div style="display: flex; justify-content: center; gap: 8px;">
+                    {% if profile.is_blocked %}
+                    <span class="badge" style="background: #ff4d4d; color: white;">BLOCKED</span>
+                    {% elif profile.is_suspended %}
+                    <span class="badge" style="background: #ffa500; color: black;">SUSPENDED</span>
+                    {% elif profile.kyc_status == 'VERIFIED' %}
+                    <span class="badge badge-filled">Verified</span>
+                    {% elif profile.kyc_status == 'PENDING' %}
+                    <span class="badge badge-pending" style="color: #4da6ff; background: rgba(77,166,255,0.1);">Pending</span>
+                    {% else %}
+                    <span class="badge badge-cancelled" style="color: var(--text-secondary); background: rgba(255,255,255,0.1);">Unverified</span>
+                    {% endif %}
+                    <span class="badge" style="background: rgba(212,175,55,0.1); color: var(--primary);">
+                        {{ profile.active_plan|default:"NO PLAN" }}
+                    </span>
+                </div>
+
+                <div style="display: flex; gap: 5px; margin-top: 10px;">
+                    <a href="{% url 'admin_toggle_service' profile.user.id 'block' %}" class="bc-btn" style="padding: 5px 12px; font-size: 10px; background: {% if profile.is_blocked %}var(--success){% else %}#ff4d4d{% endif %}; color: white;">
+                        {% if profile.is_blocked %}Unblock Login{% else %}Block Login{% endif %}
+                    </a>
+                    <a href="{% url 'admin_toggle_service' profile.user.id 'suspend' %}" class="bc-btn" style="padding: 5px 12px; font-size: 10px; background: {% if profile.is_suspended %}var(--success){% else %}#ffa500{% endif %}; color: white;">
+                        {% if profile.is_suspended %}Lift Suspension{% else %}Suspend User{% endif %}
+                    </a>
+                </div>
+            </div>
+            
+            <div style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 20px; text-align: left;">
+                <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 10px;">TRADER ID</div>
+                <div class="mono bold" style="background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 4px;">{{ profile.trader_id }}</div>
+            </div>
+        </div>
+
+        <!-- Wallets -->
+        <div class="data-card glass" style="padding: 0; overflow: hidden;">
+            <div style="padding: 15px 25px; border-bottom: 1px solid var(--border); font-weight: 800; font-size: 13px;">Wallet Balances</div>
+            <div class="data-table-wrap">
+                <table class="data-table small">
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th class="right">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for w in wallets %}
+                        <tr>
+                            <td data-label="Asset" class="bold">{% if w.asset.icon_url %}<img src="{{ w.asset.icon_url }}" style="width: 16px; margin-right: 8px;">{% endif %}{{ w.asset.symbol }}</td>
+                            <td data-label="Balance" class="right mono">{{ w.balance|floatformat:8 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- History & Activity -->
+    <div style="display: flex; flex-direction: column; gap: 30px;">
+        <!-- Transactions -->
+        <div class="data-card glass" style="padding: 0; overflow: hidden;">
+            <div style="padding: 15px 25px; border-bottom: 1px solid var(--border); font-weight: 800; font-size: 13px;">Recent Deposits & Withdrawals</div>
+            <div class="data-table-wrap">
+                <table class="data-table small">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th class="right">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in transactions|slice:":10" %}
+                        <tr>
+                            <td data-label="Date" class="dim mono">{{ tx.timestamp|date:"M d" }}</td>
+                            <td data-label="Entry">{{ tx.tx_type }} ({{ tx.asset.symbol }})</td>
+                            <td data-label="Value" class="mono">${{ tx.usd_amount }}</td>
+                            <td data-label="Status" class="right"><span class="badge badge-{{ tx.status|lower }}">{{ tx.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Orders -->
+        <div class="data-card glass" style="padding: 0; overflow: hidden;">
+            <div style="padding: 15px 25px; border-bottom: 1px solid var(--border); font-weight: 800; font-size: 13px;">Trading Activity (Orders)</div>
+            <div class="data-table-wrap">
+                <table class="data-table small">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Side</th>
+                            <th>Asset</th>
+                            <th>Qty</th>
+                            <th class="right">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for o in orders|slice:":10" %}
+                        <tr>
+                            <td data-label="Date" class="dim mono">{{ o.created_at|date:"M d" }}</td>
+                            <td data-label="Side" class="bold color-{{ o.order_type|lower }}">{{ o.order_type }}</td>
+                            <td data-label="Asset">{{ o.asset.symbol }}</td>
+                            <td data-label="Qty" class="mono">{{ o.quantity }}</td>
+                            <td data-label="Status" class="right"><span class="badge badge-{{ o.status|lower }}">{{ o.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Investment History -->
+        <div class="data-card glass" style="padding: 0; overflow: hidden;">
+            <div style="padding: 15px 25px; border-bottom: 1px solid var(--border); font-weight: 800; font-size: 13px;">Investment Subscriptions</div>
+            <div class="data-table-wrap">
+                <table class="data-table small">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Plan</th>
+                            <th class="right">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in investments %}
+                        <tr>
+                            <td data-label="Date" class="dim mono">{{ i.timestamp|date:"M d" }}</td>
+                            <td data-label="Plan" class="bold">{{ i.plan_name }}</td>
+                            <td data-label="Status" class="right"><span class="badge badge-{{ i.status|lower }}">{{ i.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

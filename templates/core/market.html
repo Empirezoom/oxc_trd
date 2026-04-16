@@ -1,0 +1,204 @@
+{% extends 'core/base.html' %} {% load static %} {% block title %}Market
+Overview | OCTALX{% endblock %} {% block content %}
+<div class="page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">
+        <i
+          class="fas fa-magnifying-glass-chart"
+          style="color: var(--primary)"
+        ></i>
+        Market Overview
+      </h1>
+      <p class="page-sub">Real-time global market data</p>
+    </div>
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input type="text" id="market-search" placeholder="Search assets..." />
+    </div>
+  </div>
+
+  <!-- Market Summary Cards -->
+  <div class="summary-grid">
+    <div class="summary-card glass">
+      <div class="sc-icon"><i class="fas fa-globe"></i></div>
+      <div>
+        <div class="sc-label">Global Market Cap</div>
+        <div class="sc-val">$2.41T</div>
+        <div class="sc-change pos">+1.4%</div>
+      </div>
+    </div>
+    <div class="summary-card glass">
+      <div class="sc-icon" style="background: rgba(0, 223, 130, 0.1)">
+        <i class="fas fa-bolt" style="color: var(--success)"></i>
+      </div>
+      <div>
+        <div class="sc-label">24h Volume</div>
+        <div class="sc-val">$142.5B</div>
+        <div class="sc-change pos">+5.2%</div>
+      </div>
+    </div>
+    <div class="summary-card glass">
+      <div class="sc-icon" style="background: rgba(212, 175, 55, 0.1)">
+        <i class="fab fa-bitcoin" style="color: var(--primary)"></i>
+      </div>
+      <div>
+        <div class="sc-label">BTC Dominance</div>
+        <div class="sc-val">52.4%</div>
+        <div class="sc-change neg">-0.3%</div>
+      </div>
+    </div>
+    <div class="summary-card glass">
+      <div class="sc-icon" style="background: rgba(255, 77, 77, 0.1)">
+        <i class="fas fa-fire" style="color: var(--danger)"></i>
+      </div>
+      <div>
+        <div class="sc-label">Active Assets</div>
+        <div class="sc-val">{{ assets|length }}+</div>
+        <div class="sc-change" style="color: var(--text-secondary)">
+          Tracked Live
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Market Category Tabs -->
+  <div class="market-filter-bar">
+    <button class="mfb active" data-filter="all">All</button>
+    <button class="mfb" data-filter="crypto">Crypto</button>
+    <button class="mfb" data-filter="forex">Forex</button>
+  </div>
+
+  <!-- Market Table -->
+  <div class="data-card glass">
+    <div class="data-table-wrap">
+      <table class="data-table" id="market-table">
+        <thead>
+          <tr>
+            <th class="sortable" data-col="name">
+              #&nbsp; Asset <i class="fas fa-sort"></i>
+            </th>
+            <th class="sortable" data-col="price">
+              Price <i class="fas fa-sort"></i>
+            </th>
+            <th class="sortable" data-col="change">
+              24h Change <i class="fas fa-sort"></i>
+            </th>
+            <th>24h High</th>
+            <th>24h Low</th>
+            <th class="sortable" data-col="vol">
+              Volume <i class="fas fa-sort"></i>
+            </th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for asset in assets %}
+          <tr
+            class="market-row"
+            data-symbol="{{ asset.symbol }}"
+            data-name="{{ asset.name }}"
+            data-price="{{ asset.current_price }}"
+            data-change="{{ asset.change_24h }}"
+            data-vol="{{ asset.volume_24h }}"
+          >
+            <td data-label="Asset">
+              <div class="asset-cell">
+                <div class="asset-icon-sm">
+                  <i class="{{ asset.icon_class }}"></i>
+                </div>
+                <div>
+                  <div class="asset-sym">{{ asset.symbol }}</div>
+                  <div class="asset-nm">{{ asset.name }}</div>
+                </div>
+              </div>
+            </td>
+            <td data-label="Price" class="mono bold">${{ asset.current_price }}</td>
+            <td
+              data-label="24h Change"
+              class="{% if asset.change_24h >= 0 %}buy-text{% else %}sell-text{% endif %} bold"
+            >
+              {% if asset.change_24h >= 0 %}+{% endif %}{{ asset.change_24h }}%
+            </td>
+            <td data-label="24h High" class="mono buy-text">${{ asset.high_24h }}</td>
+            <td data-label="24h Low" class="mono sell-text">${{ asset.low_24h }}</td>
+            <td data-label="Volume" class="mono dim">${{ asset.volume_24h|floatformat:0 }}</td>
+            <td data-label="Action">
+              <a
+                href="{% url 'index' %}?pair={{ asset.symbol }}"
+                class="trade-btn-sm"
+                >Trade</a
+              >
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="empty-cell">
+              <div class="empty-state">
+                <i class="fas fa-database"></i>
+                <p>
+                  No assets loaded.
+                  <a href="/admin/core/asset/add/">Add via admin panel →</a>
+                </p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Search filter
+    const searchInput = document.getElementById("market-search");
+    const rows = document.querySelectorAll(".market-row");
+    searchInput.addEventListener("input", () => {
+      const q = searchInput.value.toLowerCase();
+      rows.forEach((row) => {
+        const sym = row.dataset.symbol.toLowerCase();
+        const name = row.dataset.name.toLowerCase();
+        row.style.display = sym.includes(q) || name.includes(q) ? "" : "none";
+      });
+    });
+
+    // Category filter buttons
+    document.querySelectorAll(".mfb").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document
+          .querySelectorAll(".mfb")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+
+    // Price live simulation
+    const priceCells = document.querySelectorAll(".market-row td:nth-child(2)");
+    setInterval(() => {
+      rows.forEach((row, i) => {
+        const basePrice = parseFloat(row.dataset.price);
+        if (!basePrice) return;
+        const move = (Math.random() - 0.5) * basePrice * 0.001;
+        const newPrice = basePrice + move;
+        row.dataset.price = newPrice;
+        const cell = row.querySelector("td:nth-child(2)");
+        if (cell) {
+          cell.textContent =
+            "$" +
+            newPrice.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            });
+          cell.style.color = move >= 0 ? "var(--success)" : "var(--danger)";
+          setTimeout(() => {
+            cell.style.color = "";
+          }, 800);
+        }
+      });
+    }, 2500);
+  });
+</script>
+{% endblock %}

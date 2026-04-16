@@ -1,0 +1,121 @@
+{% extends 'core/custom_admin/admin_base.html' %}
+{% block admin_title %}Dashboard{% endblock %}
+{% block admin_content %}
+<div style="margin-bottom: 40px">
+  <h1
+    style="font-family: &quot;Cinzel&quot;; font-size: 32px; margin-bottom: 5px"
+  >
+    Admin Console
+  </h1>
+  <p style="color: var(--text-secondary); font-size: 14px">
+    Platform metrics overview
+  </p>
+</div>
+
+<div class="summary-grid">
+  <a
+    href="{% url 'custom_admin_users' %}"
+    class="summary-card glass"
+    style="text-decoration: none; color: inherit; transition: all 0.2s"
+  >
+    <div class="sc-icon">
+      <i class="fas fa-users" style="color: var(--primary)"></i>
+    </div>
+    <div>
+      <div class="sc-label">Total Users</div>
+      <div class="sc-val">{{ users_count }}</div>
+    </div>
+  </a>
+  <div class="summary-card glass">
+    <div class="sc-icon">
+      <i class="fas fa-money-bill-transfer" style="color: var(--success)"></i>
+    </div>
+    <div>
+      <div class="sc-label">Active Orders</div>
+      <div class="sc-val">{{ active_orders }}</div>
+    </div>
+  </div>
+  <div class="summary-card glass">
+    <div class="sc-icon">
+      <i class="fas fa-sack-dollar" style="color: var(--danger)"></i>
+    </div>
+    <div>
+      <div class="sc-label">Deposit Volume</div>
+      <div class="sc-val">${{ total_tx_vol|default:"0"|floatformat:2 }}</div>
+    </div>
+  </div>
+  <div class="summary-card glass">
+    <div class="sc-icon">
+      <i class="fas fa-coins" style="color: #4da6ff"></i>
+    </div>
+    <div>
+      <div class="sc-label">Listed Assets</div>
+      <div class="sc-val">{{ assets_count }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <div class="data-card glass">
+    <h3 style="margin-bottom: 20px; font-size: 16px">
+      Recent User Registrations
+    </h3>
+    <div class="data-table-wrap">
+      <table class="data-table" style="width: 100%">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Date Joined</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in recent_users %}
+          <tr>
+            <td data-label="Username">{{ u.username }}</td>
+            <td data-label="Date Joined" class="dim">{{ u.date_joined|date:"M d, Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="data-card glass" style="padding: 20px">
+    <h3 style="margin-bottom: 20px; font-size: 16px">Latest Transactions</h3>
+    <div class="data-table-wrap">
+      <table class="data-table" style="width: 100%">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Type</th>
+            <th class="right">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in recent_transactions %}
+          <tr>
+            <td data-label="User">{{ t.user.username }}</td>
+            <td data-label="Type"
+              class="{% if t.tx_type == 'DEPOSIT' %}buy-text{% else %}sell-text{% endif %} bold"
+            >
+              {{ t.tx_type }}
+            </td>
+            <td data-label="Amount" class="right">
+              <span
+                class="mono bold"
+                style="color: {% if t.tx_type == 'DEPOSIT' %}var(--success){% else %}var(--danger){% endif %};"
+              >
+                {% if t.tx_type == 'DEPOSIT' %}+{% else %}-{% endif %}{{ t.amount|floatformat:8 }}
+              </span>
+              <span class="dim" style="font-size: 10px"
+                >{{ t.asset.symbol }}</span
+              >
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends 'core/custom_admin/admin_base.html' %}
+
+{% block admin_title %}Institutional Deposits{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-header">
+    <div>
+        <h1 class="admin-title">Deposit <span style="color:var(--primary);">Ledger</span></h1>
+        <p class="admin-sub">Review and approve user deposit requests</p>
+    </div>
+</div>
+
+<div class="admin-search-wrap">
+    <div style="position: relative;">
+        <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+        <input type="text" id="admin-search" placeholder="Search by user, asset, or amount..." onkeyup="filterAdminRows()">
+    </div>
+</div>
+
+<div id="admin-card-container" class="admin-mobile-only"></div>
+
+<div class="data-card glass admin-desktop-only" style="padding: 0; overflow: hidden;">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>User</th>
+                <th>Asset</th>
+                <th class="right">Amount</th>
+                <th class="right">Status</th>
+                <th class="right">Operations</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in transactions %}
+            <tr class="data-row"
+                data-user="{{ tx.user.username }}"
+                data-asset="{{ tx.asset.symbol }}"
+                data-amount="{{ tx.amount|floatformat:8 }}"
+                data-usd="${{ tx.usd_amount|floatformat:2 }}"
+                data-status="{{ tx.status }}"
+                data-date="{{ tx.timestamp|date:'M d, H:i' }}"
+                data-approve-url="{% url 'admin_approve_tx' tx.id %}"
+                data-reject-url="{% url 'admin_reject_tx' tx.id %}"
+                {% if tx.receipt_image %}data-receipt="{{ tx.receipt_image.url }}"{% endif %}
+            >
+                <td class="mono dim">{{ tx.timestamp|date:"M d, H:i" }}</td>
+                <td class="bold">{{ tx.user.username }}</td>
+                <td class="bold">{{ tx.asset.symbol }}</td>
+                <td class="right">
+                    <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                        <span class="mono bold" style="color: var(--success);">+{{ tx.amount|floatformat:8 }} {{ tx.asset.symbol }}</span>
+                        <span class="dim" style="font-size: 11px;">(${{ tx.usd_amount|floatformat:2 }})</span>
+                    </div>
+                </td>
+                <td class="right"><span class="badge badge-{{ tx.status|lower }}">{{ tx.status }}</span></td>
+                <td class="right">
+                    {% if tx.status == 'PENDING' %}
+                        <a href="{% url 'admin_approve_tx' tx.id %}" class="trade-btn-sm" style="color:var(--success)">APPROVE</a>
+                    {% else %}<span class="dim mono">-</span>{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+    @media (max-width: 991px) {
+        .admin-desktop-only { display: none; }
+        .admin-mobile-only { display: block; }
+    }
+    @media (min-width: 992px) {
+        .admin-mobile-only { display: none; }
+    }
+</style>
+
+<script>
+    function filterAdminRows() {
+        const query = document.getElementById('admin-search').value.toLowerCase();
+        const rows = document.querySelectorAll('.data-row');
+        const container = document.getElementById('admin-card-container');
+        
+        let html = '';
+        rows.forEach(row => {
+            if (row.textContent.toLowerCase().includes(query)) {
+                row.style.display = '';
+                const d = row.dataset;
+                html += `
+                    <div class="admin-table-card">
+                        <div class="atc-row">
+                            <span class="bold color-primary">${d.user}</span>
+                            <span class="dim mono" style="font-size:10px;">${d.date}</span>
+                        </div>
+                        <div class="atc-row">
+                            <span class="atc-label">Asset / Sum</span>
+                            <span class="mono bold" style="color:var(--success);">+${d.amount} ${d.asset}</span>
+                        </div>
+                        <div class="atc-row">
+                            <span class="atc-label">USD Value</span>
+                            <span class="dim mono">${d.usd}</span>
+                        </div>
+                        <div class="atc-row">
+                            <span class="atc-label">Status</span>
+                            <span class="badge badge-${d.status.toLowerCase()}">${d.status}</span>
+                        </div>
+                        ${d.status === 'PENDING' ? `
+                        <div style="display:flex; gap:8px; margin-top:15px;">
+                            ${d.receipt ? `<a href="${d.receipt}" target="_blank" class="bc-btn" style="flex:1; text-align:center; background:#222; font-size:10px;">VIEW RECEIPT</a>` : ''}
+                            <a href="${d.approveUrl}" class="bc-btn" style="flex:1; text-align:center; background:var(--success); color:black; font-size:10px; font-weight:800;">APPROVE</a>
+                            <a href="${d.rejectUrl}" class="bc-btn" style="flex:1; text-align:center; background:var(--danger); color:white; font-size:10px; font-weight:800;">REJECT</a>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        container.innerHTML = html || '<div class="center dim" style="padding:40px;">No deposits found.</div>';
+    }
+    document.addEventListener('DOMContentLoaded', filterAdminRows);
+</script>
+{% endblock %}

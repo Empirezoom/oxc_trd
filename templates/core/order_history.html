@@ -1,0 +1,135 @@
+{% extends 'core/base.html' %} 
+{% load static %} 
+
+{% block title %}Order History | OCTALX{% endblock %} 
+
+{% block content %}
+<div class="page-container" style="max-width: 900px; margin: 0 auto;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">
+        <i class="fas fa-list" style="color: var(--primary)"></i> 
+        {% if is_demo_mode %}Demo{% else %}Real{% endif %} Orders
+      </h1>
+      <p class="page-sub">Trace your exchange execution history</p>
+    </div>
+    <a href="{% url 'transaction_history' %}" class="trade-btn-sm" style="padding: 12px 20px">
+      <i class="fas fa-receipt"></i> Fund Records →
+    </a>
+  </div>
+
+  <!-- SEARCH BAR -->
+  <div class="search-wrap" style="margin-bottom: 25px; position: sticky; top: 75px; z-index: 100;">
+      <div style="position: relative;">
+          <i class="fas fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+          <input 
+              type="text" 
+              id="row-search" 
+              placeholder="Search by pair, type, price, or status..." 
+              style="width: 100%; background: #1a1e26; border: 2px solid var(--border); border-radius: 12px; padding: 15px 15px 15px 45px; color: white; outline: none; transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"
+              onkeyup="filterRows()"
+          >
+      </div>
+  </div>
+
+  <div id="grouped-container">
+      <div class="loading-state" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+          <i class="fas fa-spinner fa-spin fa-2x"></i>
+          <p style="margin-top: 15px; font-weight: 700;">Loading History...</p>
+      </div>
+  </div>
+
+  <!-- HIDDEN SOURCE -->
+  <div style="display: none;">
+      <table id="source-table">
+          {% for o in orders %}
+          <tr class="data-row" 
+              data-date="{{ o.created_at|date:'M d, Y' }}"
+              data-time="{{ o.created_at|date:'H:i' }}"
+              data-pair="{{ o.asset.symbol }}/USDT"
+              data-side="{{ o.order_type }}"
+              data-kind="{{ o.order_kind }}"
+              data-price="${{ o.price|floatformat:2 }}"
+              data-qty="{{ o.quantity|floatformat:8 }} {{ o.asset.symbol }}"
+              data-total="${{ o.total|floatformat:2 }}"
+              data-status="{{ o.status }}"
+          >
+              <td>{{ o.asset.symbol }} {{ o.order_type }} {{ o.order_kind }} {{ d.status }}</td>
+          </tr>
+          {% endfor %}
+      </table>
+  </div>
+</div>
+
+<style>
+    .date-group-header { font-family: 'Cinzel', serif; font-size: 13px; color: var(--primary); margin: 35px 0 15px; padding-left: 10px; border-left: 3px solid var(--primary); }
+    .history-card { background: #0e1117; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    .history-card:active { transform: scale(0.98); background: rgba(255,255,255,0.02); }
+    .history-card .asset-info { display: flex; align-items: center; gap: 15px; }
+    .history-card .side-indicator { padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+    .history-card .amt-col { text-align: right; }
+</style>
+
+<script>
+    function filterRows() {
+        const query = document.getElementById('row-search').value.toLowerCase();
+        const rows = document.querySelectorAll('.data-row');
+        const container = document.getElementById('grouped-container');
+        let grouped = {};
+        
+        const today = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+        const yesDate = new Date(); yesDate.setDate(yesDate.getDate() - 1);
+        const yesterday = yesDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+
+        rows.forEach(row => {
+            if (row.textContent.toLowerCase().includes(query)) {
+                let dateKey = row.dataset.date;
+                let displayKey = dateKey;
+                if (dateKey === today) displayKey = "Today";
+                else if (dateKey === yesterday) displayKey = "Yesterday";
+
+                if (!grouped[displayKey]) grouped[displayKey] = [];
+                grouped[displayKey].push({...row.dataset});
+            }
+        });
+        renderGrouped(grouped);
+    }
+
+    function renderGrouped(grouped) {
+        const container = document.getElementById('grouped-container');
+        container.innerHTML = '';
+        const keys = Object.keys(grouped);
+        if (keys.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding: 50px; opacity: 0.5;"><i class="fas fa-ghost fa-3x"></i><p style="margin-top:15px; font-weight:700;">No records found</p></div>`;
+            return;
+        }
+
+        keys.forEach(key => {
+            let html = `<div class="date-group-header">${key}</div>`;
+            grouped[key].forEach(d => {
+                const sideColor = d.side === 'BUY' ? 'rgba(14,203,129,0.1)' : 'rgba(246,70,93,0.1)';
+                const sideText = d.side === 'BUY' ? 'var(--success)' : 'var(--danger)';
+                const statClass = d.status.toLowerCase();
+                
+                html += `
+                    <div class="history-card" onclick='showGlobalModal("Order Details", ${JSON.stringify(d)})'>
+                        <div class="asset-info">
+                            <div class="side-indicator" style="background: ${sideColor}; color: ${sideText}">${d.side}</div>
+                            <div>
+                                <div style="font-weight: 800; font-size: 14px;">${d.pair}</div>
+                                <div style="font-size: 10px; color: var(--text-secondary);">${d.time} &bull; ${d.kind}</div>
+                            </div>
+                        </div>
+                        <div class="amt-col">
+                            <div style="font-weight: 800; font-size: 14px;">${d.total}</div>
+                            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase;" class="color-${statClass}">${d.status}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML += html;
+        });
+    }
+    document.addEventListener("DOMContentLoaded", filterRows);
+</script>
+{% endblock %}

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #07090d; color: #ffffff; padding: 40px; }
+        .card { background: #1a1e26; border: 1px solid #d4af37; padding: 30px; border-radius: 12px; }
+        .btn { background: #d4af37; color: #000; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; }
+        .footer { margin-top: 30px; font-size: 12px; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="card" style="background: #1a1e26; border: 1px solid #d4af37; padding: 30px; border-radius: 12px;">
+        <h2 style="color: #d4af37; font-size: 24px; margin-top: 0;">Welcome to OctalX!</h2>
+        <p style="color: #f0f0f0; font-size: 16px; line-height: 1.5;">Hello <strong>{{ user.username }}</strong>,</p>
+        <p style="color: #f0f0f0; font-size: 16px; line-height: 1.5;">Your institutional trading account has been successfully initialized. You now have access to our premium assets, managed portfolios, and expert analysis.</p>
+        <p style="color: #f0f0f0; font-size: 16px; line-height: 1.5;">To get started, please secure your account and verify your identity in the settings panel.</p>
+        <br>
+        <a href="{{ site_url }}/login" class="btn" style="background: #d4af37; color: #000; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Access Dashboard</a>
+        <div class="footer" style="margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #333; padding-top: 15px;">
+            &copy; 2026 OctalX Global Trading. System Secure.
+        </div>
+    </div>
+</body>
+</html>

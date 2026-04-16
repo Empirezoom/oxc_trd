@@ -1,0 +1,741 @@
+{% extends 'core/base.html' %} 
+{% load static %} 
+{% load currency_tags %} 
+
+{% block title %}My Wallet | OCTALX{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">
+        <i class="fas fa-wallet" style="color: var(--primary)"></i>
+        {% if is_demo_mode %}Demo{% else %}Real{% endif %} Portfolio
+      </h1>
+      <p class="page-sub">
+        {% if is_demo_mode %} Managing your
+        <strong style="color: var(--primary)">virtual</strong> assets {% else %}
+        Managing your
+        <strong style="color: var(--success)">live</strong> digital capital {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <!-- Balance + Action Row -->
+  <div class="wallet-top-grid">
+    <div class="balance-card glass">
+      <div class="bc-label">Total Estimated Balance</div>
+      <div class="bc-amount">
+        <span id="total-balance-display">{% convert_price total_balance %}</span>
+      </div>
+      <div class="bc-sub">
+        <span class="pos"
+          ><i class="fas fa-arrow-trend-up"></i> Updated live</span
+        >
+      </div>
+      <div class="bc-actions">
+        <button class="bc-btn" onclick="openModal('deposit-modal')">
+          <i class="fas fa-arrow-down-to-line"></i> {% if is_demo_mode %}Instant
+          Deposit{% else %}Deposit{% endif %}
+        </button>
+        {% if not is_demo_mode %}
+        <button
+          class="bc-btn bc-btn-outline"
+          onclick="openModal('withdraw-modal')"
+        >
+          <i class="fas fa-arrow-up-from-line"></i> Withdraw
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Portfolio Allocation -->
+    <div class="alloc-card glass">
+      <div class="alloc-title">Portfolio Allocation</div>
+      {% if wallets %}
+      <div class="alloc-bars">
+        {% for w in wallets %} {% if total_balance > 0 %}
+        <div class="alloc-row">
+          <span class="alloc-sym">{{ w.asset.symbol }}</span>
+          <div class="alloc-bar-wrap">
+            <div
+              class="alloc-bar"
+              style="width: {% widthratio w.display_value total_balance 100 %}%; max-width: 100%;"
+            ></div>
+          </div>
+          <span class="alloc-pct">
+            {% widthratio w.display_value total_balance 100 %}%
+          </span>
+        </div>
+        {% endif %} {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state-sm">
+        No assets in wallet. Deposit to get started.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Assets Table -->
+  <div class="data-card glass" style="margin-top: 20px">
+    <div class="dc-header">
+      <span class="dc-title">Holdings</span>
+    </div>
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th class="right">Balance</th>
+            <th class="right">Price</th>
+            <th class="right">Value (USD)</th>
+            <th class="right">24h Change</th>
+            <th class="right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for w in wallets %}
+          <tr>
+            <td data-label="Asset">
+              <div class="asset-cell">
+                <div class="asset-icon-sm">
+                  <i class="{{ w.asset.icon_class }}"></i>
+                </div>
+                <div>
+                  <div class="asset-sym">{{ w.asset.name }}</div>
+                  <div class="asset-nm">{{ w.asset.symbol }}</div>
+                </div>
+              </div>
+            </td>
+            <td data-label="Balance" class="right mono">
+              {{ w.display_balance|floatformat:8 }}
+            </td>
+            <td data-label="Price" class="right mono">
+              ${{ w.asset.current_price }}
+            </td>
+            <td data-label="Value (USD)" class="right mono bold">
+              ${{ w.display_value|floatformat:2 }}
+            </td>
+            <td
+              data-label="24h Change"
+              class="right {% if w.asset.change_24h >= 0 %}buy-text{% else %}sell-text{% endif %}"
+            >
+              {% if w.asset.change_24h >= 0 %}+{% endif %}{{ w.asset.change_24h }}%
+            </td>
+            <td data-label="Actions" class="right">
+              <a
+                href="{% url 'index' %}?pair={{ w.asset.symbol }}"
+                class="trade-btn-sm"
+                >Trade</a
+              >
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <i class="fas fa-coins"></i>
+                <p>
+                  Wallet is empty —
+                  <button class="link-btn" onclick="openModal('deposit-modal')">
+                    Make a deposit
+                  </button>
+                </p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Transaction History -->
+  <div class="data-card glass" style="margin-top: 20px">
+    <div class="dc-header">
+      <span class="dc-title">Recent Transactions</span>
+      <a href="{% url 'transaction_history' %}" class="dc-link">View All →</a>
+    </div>
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Asset</th>
+            <th class="right">Amount</th>
+            <th class="right">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tx in transactions %}
+          <tr>
+            <td data-label="Time" class="mono dim">
+              {{ tx.timestamp|date:"M d, H:i" }}
+            </td>
+            <td
+              data-label="Type"
+              class="{% if tx.tx_type == 'DEPOSIT' %}buy-text{% else %}sell-text{% endif %} bold"
+            >
+              {{ tx.tx_type }}
+            </td>
+            <td data-label="Asset">
+              <div class="asset-cell">
+                <div
+                  class="asset-icon-sm"
+                  style="width: 24px; height: 24px; font-size: 11px"
+                >
+                  <i class="{{ tx.asset.icon_class }}"></i>
+                </div>
+                <span class="asset-sym">{{ tx.asset.symbol }}</span>
+              </div>
+            </td>
+            <td data-label="Amount" class="right">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: flex-end;
+                "
+              >
+                <span
+                  class="mono bold"
+                  style="color: {% if tx.tx_type == 'DEPOSIT' %}var(--success){% else %}var(--danger){% endif %};"
+                >
+                  {% if tx.tx_type == 'DEPOSIT' %}+{% else %}-{% endif %}{{ tx.amount|floatformat:8 }} {{ tx.asset.symbol }}
+                </span>
+                {% if tx.tx_type == 'DEPOSIT' %}
+                <span class="dim" style="font-size: 10px"
+                  >(${{ tx.usd_amount }})</span
+                >
+                {% endif %}
+              </div>
+            </td>
+            <td data-label="Status" class="right">
+              <span class="badge badge-{{ tx.status|lower }}"
+                >{{ tx.status }}</span
+              >
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <i class="fas fa-receipt"></i>
+                <p>No transactions yet.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── DEPOSIT MODAL ───────────────────────────────────── -->
+<div class="modal-overlay" id="deposit-modal">
+  <div class="modal-box glass">
+    <div class="modal-header">
+      <span class="modal-title"
+        ><i class="fas fa-arrow-down-to-line" style="color: var(--success)"></i>
+        Deposit Funds</span
+      >
+      <button class="modal-close" onclick="closeModal('deposit-modal')">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+    <form
+      method="POST"
+      action="{% url 'wallet' %}"
+      enctype="multipart/form-data"
+    >
+      {% csrf_token %}
+      <input type="hidden" name="tx_type" value="DEPOSIT" />
+
+      <div
+        style="
+          background: rgba(0, 223, 130, 0.05);
+          border: 1px dashed var(--success);
+          padding: 20px;
+          border-radius: 12px;
+          margin-bottom: 25px;
+          text-align: center;
+        "
+      >
+        <p
+          style="
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--success);
+            margin-bottom: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+          "
+        >
+          Official <span id="deposit-network-name">Network</span> Deposit
+        </p>
+
+        <div
+          id="qr-container"
+          style="
+            background: white;
+            padding: 10px;
+            display: inline-block;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+          "
+        >
+          <img
+            id="dynamic-qr"
+            src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PleaseSelectAsset"
+            style="width: 150px; height: 150px; display: block"
+          />
+        </div>
+
+        <div
+          style="display: flex; gap: 10px; align-items: center; margin-top: 5px"
+        >
+          <code
+            id="dynamic-address-display"
+            style="
+              flex: 1;
+              font-family: &quot;JetBrains Mono&quot;;
+              font-size: 11px;
+              background: rgba(0, 0, 0, 0.5);
+              padding: 12px;
+              border-radius: 6px;
+              word-break: break-all;
+              color: white;
+              border: 1px solid var(--border);
+            "
+            >Select an asset</code
+          >
+          <button
+            type="button"
+            class="btn-outline-sm"
+            onclick="copyDepositAddress('dynamic-address-display')"
+            style="
+              height: 40px;
+              width: 40px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border-radius: 6px;
+            "
+          >
+            <i class="fas fa-copy"></i>
+          </button>
+        </div>
+
+        <!-- Memo/Tag Row (Hidden by default) -->
+        <div
+          id="memo-row"
+          style="
+            display: none;
+            margin-top: 15px;
+            background: rgba(246, 70, 93, 0.1);
+            border: 1px solid rgba(246, 70, 93, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+          "
+        >
+          <p
+            style="
+              font-size: 10px;
+              color: var(--danger);
+              text-transform: uppercase;
+              font-weight: 800;
+              margin-bottom: 8px;
+            "
+          >
+            <i class="fas fa-triangle-exclamation"></i> Destination Tag/Memo
+            Required
+          </p>
+          <div style="display: flex; gap: 10px; align-items: center">
+            <code
+              id="dynamic-memo-display"
+              style="
+                flex: 1;
+                font-family: &quot;JetBrains Mono&quot;;
+                font-size: 13px;
+                color: white;
+                font-weight: 700;
+              "
+              >---</code
+            >
+            <button
+              type="button"
+              class="btn-outline-sm"
+              onclick="copyDepositAddress('dynamic-memo-display')"
+              style="
+                height: 30px;
+                width: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 4px;
+                border-color: var(--danger);
+                color: var(--danger);
+              "
+            >
+              <i class="fas fa-copy" style="font-size: 10px"></i>
+            </button>
+          </div>
+        </div>
+
+        <div
+          style="
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+          "
+        >
+          <div style="text-align: left">
+            <span
+              style="
+                display: block;
+                font-size: 9px;
+                color: var(--text-secondary);
+                text-transform: uppercase;
+              "
+              >Network</span
+            >
+            <span
+              id="display-network"
+              style="font-size: 12px; font-weight: 700; color: white"
+              >---</span
+            >
+          </div>
+          <div style="text-align: left">
+            <span
+              style="
+                display: block;
+                font-size: 9px;
+                color: var(--text-secondary);
+                text-transform: uppercase;
+              "
+              >Min Deposit</span
+            >
+            <span
+              id="display-min"
+              style="font-size: 12px; font-weight: 700; color: white"
+              >0.001</span
+            >
+          </div>
+        </div>
+      </div>
+
+      {% if is_demo_mode %}
+      <div
+        style="
+          background: rgba(14, 203, 129, 0.05);
+          border: 1px dashed var(--success);
+          padding: 15px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--success);
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 5px;
+          "
+        >
+          <i class="fas fa-bolt"></i> Instant Demo Funding
+        </div>
+        <p
+          style="
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+          "
+        >
+          As you are in <strong>Demo Mode</strong>, your deposit will be
+          credited to your virtual balance immediately without requiring admin
+          verification.
+        </p>
+      </div>
+      {% endif %}
+
+      <div class="modal-field">
+        <label>Select Asset to Deposit</label>
+        <select
+          name="asset_symbol"
+          id="deposit-asset-select"
+          class="m-input"
+          required
+        >
+          <option value="" disabled selected>Choose crypto asset...</option>
+          {% for asset in assets %}
+          <option
+            value="{{ asset.symbol }}"
+            data-addr="{{ asset.deposit_address }}"
+            data-network="{{ asset.network }}"
+            data-memo="{{ asset.memo_tag|default:'' }}"
+            data-min="0.0001"
+          >
+            {{ asset.name }} ({{ asset.symbol }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Amount in Dollars ($ USD)</label>
+        <input
+          type="number"
+          name="amount"
+          class="m-input"
+          step="0.01"
+          min="1.00"
+          placeholder="e.g. 500.00"
+          required
+        />
+        <p
+          style="font-size: 10px; color: var(--text-secondary); margin-top: 4px"
+        >
+          Enter the exact USD value of the crypto you sent.
+        </p>
+      </div>
+      {% if not is_demo_mode %}
+      <div class="modal-field">
+        <label>Upload Proof of Payment (Receipt)</label>
+        <input
+          type="file"
+          name="receipt_image"
+          class="m-input"
+          accept="image/*"
+          required
+          style="padding: 10px"
+        />
+      </div>
+      {% endif %}
+      <button
+        type="submit"
+        class="submit-order-btn buy-mode"
+        style="width: 100%; margin-top: 20px"
+      >
+        {% if is_demo_mode %}Claim Instant Demo Funds{% else %}Submit Proof of
+        Payment{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ── WITHDRAW MODAL ─────────────────────────────────── -->
+<div class="modal-overlay" id="withdraw-modal">
+  <div class="modal-box glass">
+    <div class="modal-header">
+      <span class="modal-title"
+        ><i class="fas fa-arrow-up-from-line" style="color: var(--danger)"></i>
+        Withdraw Funds</span
+      >
+      <button class="modal-close" onclick="closeModal('withdraw-modal')">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+    <form method="POST" action="{% url 'wallet' %}">
+      {% csrf_token %}
+      <input type="hidden" name="tx_type" value="WITHDRAWAL" />
+      <div class="modal-field">
+        <label>Select Asset to Withdraw</label>
+        <select
+          name="asset_symbol"
+          id="withdraw-asset-select"
+          class="m-input"
+          required
+        >
+          <option value="" disabled selected>Choose asset...</option>
+          {% for w in wallets %}
+          <option
+            value="{{ w.asset.symbol }}"
+            data-price="{{ w.asset.current_price }}"
+            data-balance="{{ w.display_balance }}"
+          >
+            {{ w.asset.name }} ({{ w.asset.symbol }}) — Bal: {{ w.display_balance|floatformat:4 }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Amount</label>
+        <input
+          type="number"
+          name="amount"
+          id="withdraw-amount-input"
+          class="m-input"
+          step="0.00000001"
+          min="0.00000001"
+          placeholder="0.00"
+          required
+        />
+        <div
+          id="withdraw-info"
+          style="font-size: 11px; margin-top: 8px; display: none"
+        >
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 4px;
+            "
+          >
+            <span class="dim">Estimated Value:</span>
+            <span id="withdraw-usd-val" class="bold text-success">$0.00</span>
+          </div>
+          <div
+            id="min-withdraw-error"
+            style="color: var(--danger); font-weight: 700; display: none"
+          >
+            <i class="fas fa-triangle-exclamation"></i> Minimum withdrawal for
+            this asset is $10,000 USD equivalent.
+          </div>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Network Protocol</label>
+        <input
+          type="text"
+          name="network"
+          class="m-input"
+          placeholder="e.g. ERC-20, TRC-20, BEP-20"
+          required
+        />
+        <p
+          style="font-size: 10px; color: var(--text-secondary); margin-top: 4px"
+        >
+          Important: Ensure the destination address supports this network.
+        </p>
+      </div>
+      <div class="modal-field">
+        <label>Destination Wallet Address</label>
+        <input
+          type="text"
+          name="dest_address"
+          class="m-input"
+          placeholder="Enter your external wallet address"
+          required
+        />
+      </div>
+      <button
+        type="submit"
+        id="withdraw-submit-btn"
+        class="submit-order-btn sell-mode"
+        style="width: 100%; margin-top: 20px"
+      >
+        Confirm Withdrawal Request
+      </button>
+    </form>
+  </div>
+</div>
+
+{% endblock %} {% block extra_js %}
+<script>
+  function openModal(id) {
+    document.getElementById(id).classList.add("active");
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove("active");
+  }
+  document.querySelectorAll(".modal-overlay").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      if (e.target === el) el.classList.remove("active");
+    });
+  });
+  const ddl = document.getElementById("deposit-asset-select");
+  const addrDisplay = document.getElementById("dynamic-address-display");
+  const qrImg = document.getElementById("dynamic-qr");
+  const netDisplay = document.getElementById("display-network");
+  const netTitle = document.getElementById("deposit-network-name");
+  const minDisplay = document.getElementById("display-min");
+  const memoRow = document.getElementById("memo-row");
+  const memoDisplay = document.getElementById("dynamic-memo-display");
+
+  if (ddl) {
+    ddl.addEventListener("change", function () {
+      const opt = this.options[this.selectedIndex];
+      const addr = opt.getAttribute("data-addr");
+      const network = opt.getAttribute("data-network");
+      const min = opt.getAttribute("data-min");
+      const memo = opt.getAttribute("data-memo");
+
+      if (addr) {
+        addrDisplay.innerText = addr;
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${addr}`;
+        netDisplay.innerText = network;
+        netTitle.innerText = network;
+        minDisplay.innerText = min + " " + opt.value;
+
+        if (memo && memo !== "None" && memo !== "") {
+          memoRow.style.display = "block";
+          memoDisplay.innerText = memo;
+        } else {
+          memoRow.style.display = "none";
+        }
+      }
+    });
+  }
+
+  // Withdrawal Logic
+  const wSelect = document.getElementById("withdraw-asset-select");
+  const wInput = document.getElementById("withdraw-amount-input");
+  const wInfo = document.getElementById("withdraw-info");
+  const wUsd = document.getElementById("withdraw-usd-val");
+  const wErr = document.getElementById("min-withdraw-error");
+  const wBtn = document.getElementById("withdraw-submit-btn");
+
+  function updateWithdrawInfo() {
+    const opt = wSelect.options[wSelect.selectedIndex];
+    if (!opt.value) return;
+    const price = parseFloat(opt.dataset.price);
+    const amount = parseFloat(wInput.value) || 0;
+    const usdVal = amount * price;
+
+    wInfo.style.display = "block";
+    wUsd.innerText =
+      "$" + usdVal.toLocaleString(undefined, { minimumFractionDigits: 2 });
+
+    // Check if less than 10k
+    if (usdVal < 10000) {
+      wErr.style.display = "block";
+    } else {
+      wErr.style.display = "none";
+    }
+  }
+
+  if (wInput) {
+    wInput.addEventListener("input", updateWithdrawInfo);
+    wSelect.addEventListener("change", updateWithdrawInfo);
+
+    wBtn.addEventListener("click", function (e) {
+      const opt = wSelect.options[wSelect.selectedIndex];
+      const price = parseFloat(opt.dataset.price);
+      const amount = parseFloat(wInput.value) || 0;
+      const usdVal = amount * price;
+
+      if (usdVal < 10000) {
+        e.preventDefault();
+        wErr.style.display = "block";
+        wInput.classList.add("error-shake");
+        setTimeout(() => wInput.classList.remove("error-shake"), 500);
+      }
+    });
+  }
+
+  function copyDepositAddress(id) {
+    const text = document.getElementById(id).innerText;
+    if (text && text !== "Select an asset") {
+      navigator.clipboard.writeText(text);
+      alert("Copied to clipboard!");
+    }
+  }
+</script>
+{% endblock %}

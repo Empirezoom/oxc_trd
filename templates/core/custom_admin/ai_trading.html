@@ -1,0 +1,115 @@
+{% extends 'core/custom_admin/admin_base.html' %}
+{% load static %}
+
+{% block admin_title %}AI Managed Trading{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-header">
+    <div>
+        <h1 class="admin-title">AI Managed <span style="color:var(--primary);">Trading Execution</span></h1>
+        <p class="admin-sub">Execute market positions on behalf of elite-tier portfolios</p>
+        <div style="margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.2); padding: 5px 12px; border-radius: 4px;">
+            <i class="fas fa-shield-halved" style="color: #ff4d4d; font-size: 10px;"></i>
+            <span style="color: #ff4d4d; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Real Accounts Only</span>
+        </div>
+    </div>
+</div>
+
+<div class="admin-grid-2-1">
+    <!-- Execution Console -->
+    <div class="data-card glass" style="padding: 25px;">
+        <form method="POST">
+            {% csrf_token %}
+            <div class="admin-form-grid">
+                <div class="form-group">
+                    <label style="display: block; font-size: 11px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Target Trader</label>
+                    <select name="user_id" required style="width: 100%; background: #000; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; font-size: 13px;">
+                        <option value="">Select a managed account</option>
+                        {% for p in managed_users %}
+                        <option value="{{ p.user.id }}">
+                            {{ p.user.username }} ({{ p.active_plan }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-size: 11px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Asset</label>
+                    <select name="asset_id" required style="width: 100%; background: #000; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; font-size: 13px;">
+                        {% for a in assets %}
+                        <option value="{{ a.id }}">{{ a.name }} ({{ a.symbol }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="admin-form-grid">
+                <div class="form-group">
+                    <label style="display: block; font-size: 11px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Trade Action</label>
+                    <select name="trade_action" required style="width: 100%; background: #000; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; font-size: 13px;">
+                        <option value="BUY">BUY (Long)</option>
+                        <option value="SELL">SELL (Short)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-size: 11px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Entry Price (USD)</label>
+                    <input type="number" step="0.01" name="entry_price" required placeholder="0.00"
+                           style="width: 100%; background: #000; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; font-size: 13px;">
+                </div>
+            </div>
+
+            <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+                <div class="form-group">
+                    <label style="display: block; font-size: 11px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Trade Status</label>
+                    <select name="status" id="status-select" required style="width: 100%; background: #000; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; font-size: 13px;">
+                        <option value="PENDING">PENDING</option>
+                        <option value="WON">WON</option>
+                        <option value="LOSS">LOSS</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-size: 11px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Trade Stake Amount ($)</label>
+                    <input type="number" step="0.01" name="amount" required placeholder="0.00"
+                           style="width: 100%; background: #000; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; font-size: 13px;">
+                </div>
+                <div class="form-group" id="profit-group">
+                    <label style="display: block; font-size: 11px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Bonus Profit ($)</label>
+                    <input type="number" step="0.01" name="profit" placeholder="0.00"
+                           style="width: 100%; background: #000; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; font-size: 13px;">
+                </div>
+            </div>
+
+            <button type="submit" class="bc-btn" style="width: 100%; padding: 18px; background: var(--primary); color: black; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; border-radius: 12px; box-shadow: 0 10px 30px rgba(212,175,55,0.2);">
+                Execute Managed Position <i class="fas fa-bolt" style="margin-left: 10px;"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- Active Managed Accounts & Price Reference -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="data-card glass" style="padding: 25px;">
+            <h3 style="font-size: 14px; margin-bottom: 15px; color: var(--primary);">Managed Liquidity</h3>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">Total eligible users: <strong>{{ managed_users.count }}</strong></p>
+            
+            <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.6; border-top: 1px solid var(--border); padding-top: 15px;">
+                <i class="fas fa-circle-info" style="margin-right: 5px;"></i> 
+                Executing a trade here will instantly reflect in the user's order history as <strong>FILLED</strong> and automatically adjust their wallet balance.
+            </div>
+        </div>
+
+        <div class="data-card glass" style="padding: 25px;">
+            <h3 style="font-size: 14px; margin-bottom: 15px; color: var(--primary);">Market Reference</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                {% for a in assets %}
+                <div style="display: flex; justify-content: space-between; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                    <span class="bold">{{ a.symbol }}</span>
+                    <span class="mono" style="color: var(--success);">${{ a.current_price|floatformat:2 }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div style="margin-top: 15px; font-size: 10px; color: var(--text-secondary); font-style: italic;">
+                * Use these prices to ensure realistic managed growth.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

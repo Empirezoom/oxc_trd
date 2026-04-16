@@ -1,0 +1,27 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}404 - Terminal Lost | OCTALX{% endblock %}
+
+{% block content %}
+<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div class="glass" style="max-width: 600px; width: 100%; padding: 60px; text-align: center; border-radius: 20px; border: 1px solid var(--border); background: radial-gradient(circle at top right, rgba(246,70,93,0.05), transparent);">
+        <div style="font-size: 120px; font-weight: 900; font-family: 'Cinzel', serif; color: var(--danger); line-height: 1; margin-bottom: 20px; text-shadow: 0 0 30px rgba(246,70,93,0.3);">404</div>
+        <h1 style="font-family: 'Cinzel', serif; font-size: 24px; margin-bottom: 20px; letter-spacing: 2px;">CONNECTION <span style="color: var(--danger)">LOST</span></h1>
+        <p style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 40px; font-size: 15px;">The terminal path you are seeking does not exist or has been relocated to a secure sector. Return to the main hub to re-establish your portfolio connection.</p>
+        
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <a href="{% url 'index' %}" class="bc-btn" style="background: var(--primary); color: black; min-width: 200px;">
+                <i class="fas fa-house-chimney"></i> RETURN TO HUB
+            </a>
+            <a href="{% url 'market' %}" class="btn-outline" style="min-width: 200px;">
+                <i class="fas fa-chart-line"></i> MARKET DATA
+            </a>
+        </div>
+        
+        <div style="margin-top: 50px; padding-top: 30px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: 800;">
+            <i class="fas fa-shield-halved"></i> Global Security Protocol Active
+        </div>
+    </div>
+</div>
+{% endblock %}

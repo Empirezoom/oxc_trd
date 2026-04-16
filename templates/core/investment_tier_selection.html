@@ -1,0 +1,333 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .tiers-wrapper {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .tiers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 25px;
+        margin-bottom: 60px;
+    }
+
+    .tier-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        padding: 40px 30px;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        overflow: hidden;
+    }
+
+    .tier-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(180deg, rgba(212, 175, 55, 0.05) 0%, rgba(212, 175, 55, 0) 100%);
+        opacity: 0;
+        transition: opacity 0.4s;
+        pointer-events: none;
+    }
+
+    .tier-card:hover {
+        transform: translateY(-10px);
+        border-color: rgba(212, 175, 55, 0.3);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(212, 175, 55, 0.1);
+    }
+
+    .tier-card:hover::before {
+        opacity: 1;
+    }
+
+    .tier-card.recommended {
+        border: 1px solid var(--primary);
+        background: rgba(212, 175, 55, 0.03);
+    }
+
+    .tier-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: var(--primary);
+        color: #000;
+        font-size: 10px;
+        font-weight: 900;
+        padding: 4px 10px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .tier-name {
+        font-size: 12px;
+        text-transform: uppercase;
+        font-weight: 800;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+        letter-spacing: 2px;
+    }
+
+    .tier-price {
+        font-size: 42px;
+        font-weight: 800;
+        font-family: 'JetBrains Mono';
+        margin-bottom: 5px;
+        display: flex;
+        align-items: baseline;
+        gap: 5px;
+    }
+
+    .tier-price span {
+        font-size: 14px;
+        color: var(--text-secondary);
+        font-weight: 400;
+    }
+
+    .tier-desc {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 30px;
+        line-height: 1.6;
+        min-height: 42px;
+    }
+
+    .tier-features {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 40px 0;
+        flex: 1;
+    }
+
+    .tier-features li {
+        font-size: 12px;
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .tier-features li span:last-child {
+        font-weight: 700;
+        color: white;
+    }
+
+    .tier-features li.highlight span:last-child {
+        color: var(--primary);
+    }
+
+    .terms-card {
+        padding: 50px;
+        margin-top: 60px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .terms-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 40px;
+    }
+
+    .term-item h4 {
+        color: white;
+        font-size: 12px;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .term-item p {
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.7;
+    }
+
+    @media (max-width: 991px) {
+        .tiers-grid {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            text-align: center;
+            margin-bottom: 50px !important;
+        }
+        .page-title {
+            font-size: 24px !important;
+        }
+        .tiers-wrapper {
+            padding: 20px 10px;
+        }
+        .tier-card {
+            padding: 35px 25px;
+            border-radius: 20px;
+        }
+        .tier-price {
+            font-size: 36px;
+        }
+    }
+</style>
+
+<div class="page-container">
+    <div class="tiers-wrapper">
+        <div class="page-header" style="display: block; text-align: center; margin-bottom: 80px;">
+            <h1 class="page-title" style="letter-spacing: 4px;">SELECT <span style="color:var(--primary);">CAPITAL TIER</span></h1>
+            <p class="page-sub">Institutional-grade strategies for every portfolio size</p>
+        </div>
+
+        <div class="tiers-grid">
+            <!-- Essentials -->
+            <div class="tier-card glass">
+                <div class="tier-name">Essentials</div>
+                <div class="tier-price">$500 <span>/mo</span></div>
+                <p class="tier-desc">Professional entry for consistent, guided growth.</p>
+                <ul class="tier-features">
+                    <li><span>Active Positions</span> <span>Up to 2</span></li>
+                    <li><span>Signal Access</span> <span>Priority</span></li>
+                    <li><span>Support</span> <span>Standard</span></li>
+                    <li class="highlight"><span>Potential Return</span> <span>200%</span></li>
+                </ul>
+                <a href="{% url 'investment_checkout' %}?plan=Essentials&amount=500" class="bc-btn bc-btn-outline">Start Investing</a>
+            </div>
+
+            <!-- Growth -->
+            <div class="tier-card glass">
+                <div class="tier-name">Growth</div>
+                <div class="tier-price">$750 <span>/mo</span></div>
+                <p class="tier-desc">Accelerated strategies with automation bridge.</p>
+                <ul class="tier-features">
+                    <li><span>Active Positions</span> <span>Up to 4</span></li>
+                    <li><span>AutoTrading</span> <span>Integration</span></li>
+                    <li><span>Strategy Reviews</span> <span>Bi-weekly</span></li>
+                    <li class="highlight"><span>Potential Return</span> <span>300%</span></li>
+                </ul>
+                <a href="{% url 'investment_checkout' %}?plan=Growth&amount=750" class="bc-btn bc-btn-outline">Start Investing</a>
+            </div>
+
+            <!-- Premium -->
+            <div class="tier-card glass recommended">
+                <div class="tier-badge">Recommended</div>
+                <div class="tier-name" style="color: var(--primary);">Premium</div>
+                <div class="tier-price">$1,000 <span>/mo</span></div>
+                <p class="tier-desc">Maximum growth potential with full AI execution.</p>
+                <ul class="tier-features">
+                    <li><span>Active Positions</span> <span>Unlimited</span></li>
+                    <li><span>AutoTrading</span> <span>Enabled</span></li>
+                    <li><span>VIP Support</span> <span>24/7</span></li>
+                    <li class="highlight"><span>Potential Return</span> <span>450%</span></li>
+                </ul>
+                <a href="{% url 'investment_checkout' %}?plan=Premium&amount=1000" class="bc-btn">Start Investing Now</a>
+            </div>
+
+            <!-- Enterprise -->
+            <div class="tier-card glass">
+                <div class="tier-name">Enterprise</div>
+                <div class="tier-price">$1,500 <span>/mo</span></div>
+                <p class="tier-desc">Dedicated management for large institutional balances.</p>
+                <ul class="tier-features">
+                    <li><span>1-on-1 Reviews</span> <span>Bi-weekly</span></li>
+                    <li><span>Account Manager</span> <span>Dedicated</span></li>
+                    <li><span>Engine Tuning</span> <span>Included</span></li>
+                    <li class="highlight"><span>Potential Return</span> <span>600%</span></li>
+                </ul>
+                <a href="{% url 'investment_checkout' %}?plan=Enterprise&amount=1500" class="bc-btn bc-btn-outline">Start Investing</a>
+            </div>
+
+            <!-- Platinum -->
+            <div class="tier-card glass">
+                <div class="tier-name">Platinum</div>
+                <div class="tier-price">$2,500 <span>/mo</span></div>
+                <p class="tier-desc">Elite tier for high-net-worth signal exclusive.</p>
+                <ul class="tier-features">
+                    <li><span>Signal Access</span> <span>Exclusive</span></li>
+                    <li><span>Strategy Tuning</span> <span>Custom</span></li>
+                    <li><span>Senior Manager</span> <span>Dedicated</span></li>
+                    <li class="highlight"><span>Potential Return</span> <span>850%</span></li>
+                </ul>
+                <a href="{% url 'investment_checkout' %}?plan=Platinum&amount=2500" class="bc-btn bc-btn-outline">Start Investing</a>
+            </div>
+
+            <!-- Ultimate -->
+            <div class="tier-card glass">
+                <div class="tier-name">Ultimate</div>
+                <div class="tier-price">$5,000 <span>/mo</span></div>
+                <p class="tier-desc">The absolute peak of managed capital deployment.</p>
+                <ul class="tier-features">
+                    <li><span>Reviews</span> <span>Daily 1-on-1</span></li>
+                    <li><span>Alerts</span> <span>Direct Access</span></li>
+                    <li><span>Account Team</span> <span>Executive</span></li>
+                    <li class="highlight"><span>Potential Return</span> <span>1000%</span></li>
+                </ul>
+                <a href="{% url 'investment_checkout' %}?plan=Ultimate&amount=5000" class="bc-btn bc-btn-outline" style="text-decoration: none;">Start Investing</a>
+            </div>
+
+            <!-- High Growth -->
+            <div class="tier-card glass">
+                <div class="tier-name">High Growth</div>
+                <div class="tier-price">$7,500 <span>/mo</span></div>
+                <p class="tier-desc">Institutional power for significant capital appreciation.</p>
+                <ul class="tier-features">
+                    <li><span>Signal Accuracy</span> <span>99.2%</span></li>
+                    <li><span>Market Depth</span> <span>Full Access</span></li>
+                    <li><span>Senior Analyst</span> <span>1-on-1</span></li>
+                    <li class="highlight"><span>Potential Return</span> <span>1500%</span></li>
+                </ul>
+                <a href="{% url 'investment_checkout' %}?plan=High+Growth&amount=7500" class="bc-btn bc-btn-outline" style="text-decoration: none;">Start Investing</a>
+            </div>
+
+            <!-- Institutional -->
+            <div class="tier-card glass">
+                <div class="tier-name">Institutional</div>
+                <div class="tier-price">$10,000 <span>/mo</span></div>
+                <p class="tier-desc">The ultimate bridge to sovereign wealth management.</p>
+                <ul class="tier-features">
+                    <li><span>Management</span> <span>Hybrid Intelligence Framework</span></li>
+                    <li><span>Liquidity</span> <span>Priority</span></li>
+                    <li><span>Risk Guard</span> <span>Institutional</span></li>
+                    <li class="highlight"><span>Potential Return</span> <span>2200%</span></li>
+                </ul>
+                <a href="{% url 'investment_checkout' %}?plan=Institutional&amount=10000" class="bc-btn bc-btn-outline" style="text-decoration: none;">Start Investing</a>
+            </div>
+        </div>
+
+        <!-- Terms -->
+        <div class="terms-card glass">
+            <h3 style="font-family: 'Cinzel'; font-size: 18px; margin-bottom: 40px; color: var(--primary); text-align: center; letter-spacing: 2px;">
+                <i class="fas fa-shield-check"></i> SECURE INVESTMENT PROTOCOLS
+            </h3>
+            <div class="terms-grid">
+                <div class="term-item">
+                    <h4><i class="fas fa-lock" style="color:var(--primary);"></i> WITHDRAWAL LOCKUP</h4>
+                    <p>Funds are locked for a minimum of 3 months to ensure strategy execution and prevent market volatility from disrupting managed returns.</p>
+                </div>
+                <div class="term-item">
+                    <h4><i class="fas fa-chart-line" style="color:var(--primary);"></i> TARGET YIELDS</h4>
+                    <p>Return percentages are targets based on historical data. Final yields may fluctuate with market conditions and are not strictly guaranteed.</p>
+                </div>
+                <div class="term-item">
+                    <h4><i class="fas fa-credit-card" style="color:var(--primary);"></i> BILLING CYCLE</h4>
+                    <p>Plans are billed monthly. Cancellations are permitted after the initial lockup period concludes without further obligation.</p>
+                </div>
+                <div class="term-item">
+                    <h4><i class="fas fa-exclamation-triangle" style="color:var(--primary);"></i> RISK DISCLOSURE</h4>
+                    <p>Trading involves substantial risk. Only invest capital you are prepared to leverage for long-term growth objectives.</p>
+                </div>
+            </div>
+            <div style="margin-top: 50px; padding: 20px; background: rgba(212, 175, 55, 0.05); border-radius: 8px; font-size: 11px; color: var(--text-secondary); text-align: center; border: 1px solid rgba(212, 175, 55, 0.1);">
+                <i class="fas fa-shield-halved"></i> All investments are deployed via the OCTALX Secure Engine protocols.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

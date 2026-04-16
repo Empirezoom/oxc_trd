@@ -1,0 +1,144 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-container glass">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">MY <span style="color:var(--primary);">ELITE</span> PORTFOLIO</h1>
+            <p class="page-sub">Managed subscriptions and investment tracking</p>
+        </div>
+    </div>
+
+    <div class="wallet-top-grid" style="grid-template-columns: 1fr 1fr;">
+        <!-- Active Plan Card -->
+        <div class="data-card glass" style="padding: 30px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 5px;">Active Subscription Tier</div>
+                <h2 style="font-family: 'Cinzel'; font-size: 32px; color: {% if profile.active_plan %}var(--primary){% else %}var(--text-secondary){% endif %};">
+                    {% if profile.active_plan %}{{ profile.active_plan }}{% else %}NO ACTIVE PLAN{% endif %}
+                </h2>
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <span class="badge badge-{% if profile.active_plan %}filled{% else %}pending{% endif %}">
+                        {% if profile.active_plan %}ACTIVE{% else %}INACTIVE{% endif %}
+                    </span>
+                    <span class="badge" style="background: rgba(255,255,255,0.05);">LOCKUP: 3-MONTH</span>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 25px;">
+                <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px;">
+                    {% if profile.active_plan %}
+                    Your managed trading engine is currently operational. All signals and AI executions are being deployed directly to your account.
+                    {% else %}
+                    You do not have an active brokerage plan. Subscribe to a tier to start receiving expert signals and AI-managed growth.
+                    {% endif %}
+                </p>
+                <a href="{% url 'investment_plans' %}" class="bc-btn" style="width: fit-content; padding: 10px 25px; text-decoration: none;">
+                    {% if profile.active_plan %}Upgrade Plan{% else %}Get Started{% endif %}
+                </a>
+            </div>
+        </div>
+
+        <!-- Referral Hub Card -->
+        <div class="data-card glass" style="padding: 30px; border-color: rgba(0,223,130,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;">
+                <div>
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 5px;">REFERRAL REWARDS</div>
+                    <h2 style="font-family: 'Cinzel'; font-size: 24px; color: var(--success);">EARN $5 BTC</h2>
+                </div>
+                <div style="width: 50px; height: 50px; background: rgba(0, 223, 130, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--success); font-size: 20px;">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+            
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 25px;">
+                Invite your network to OCTALX and receive <strong style="color:white;">$5.00 worth of BTC</strong> instantly for every new user who verifies their account.
+            </p>
+
+            <div class="api-key-box" style="padding: 15px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid var(--border);">
+                <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">Your Unique Link</div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="flex: 1; overflow: hidden; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                        <input type="text" id="ref-link-val" value="{{ ref_link }}" readonly style="width: 100%; border: none; background: transparent; color: white; font-family: 'JetBrains Mono'; font-size: 11px; outline: none;">
+                    </div>
+                    <button onclick="copyRef()" class="bc-btn" style="height: 44px; width: 44px; padding: 0; display: flex; align-items: center; justify-content: center; min-width: 44px;">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment History -->
+    <div class="data-card glass" style="margin-top: 30px; padding: 0; overflow: hidden;">
+        <div style="padding: 20px 30px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-family: 'Cinzel'; font-size: 16px;">Subscription History</h3>
+            <span style="font-size: 11px; color: var(--text-secondary);">Last 10 payments</span>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Plan</th>
+                    <th>Amount</th>
+                    <th>Asset</th>
+                    <th>Expires</th>
+                    <th class="right">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in payments %}
+                <tr>
+                    <td data-label="Date" class="mono dim">{{ p.timestamp|date:"M d, Y" }}</td>
+                    <td data-label="Plan" class="bold">{{ p.plan_name }}</td>
+                    <td data-label="Amount" class="mono">${{ p.amount }}</td>
+                    <td data-label="Asset" class="mono">{{ p.asset_symbol }}</td>
+                    <td data-label="Expires" class="mono dim">
+                        {% if p.status == 'COMPLETED' %}
+                            {{ p.days_remaining }} days left
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td data-label="Status" class="right">
+                        {% if p.status == 'EXPIRED' %}
+                        <span class="badge badge-cancelled">Expired</span>
+                        {% else %}
+                        <span class="badge badge-{{ p.status|lower }}">{{ p.status }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="center dim" style="padding: 40px;">No investment records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function copyRef() {
+        const val = document.getElementById('ref-link-val').value;
+        try {
+            await navigator.clipboard.writeText(val);
+            const btn = document.querySelector('button[onclick="copyRef()"]');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            btn.style.borderColor = 'var(--success)';
+            btn.style.color = 'var(--success)';
+            setTimeout(() => {
+                btn.innerHTML = original;
+                btn.style.borderColor = '';
+                btn.style.color = '';
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy: ', err);
+        }
+    }
+</script>
+{% endblock %}

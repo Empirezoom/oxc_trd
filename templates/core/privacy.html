@@ -1,0 +1,194 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Privacy Protocol | OCTALX{% endblock %}
+
+{% block content %}
+<style>
+    .privacy-wrapper {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 60px 20px;
+    }
+
+    .privacy-header {
+        text-align: center;
+        margin-bottom: 60px;
+    }
+
+    .privacy-title {
+        font-family: 'Cinzel', serif;
+        font-size: 36px;
+        letter-spacing: 4px;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+    }
+
+    .privacy-meta {
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-weight: 600;
+    }
+
+    .policy-intro {
+        background: rgba(14, 203, 129, 0.05);
+        border: 1px solid rgba(14, 203, 129, 0.2);
+        padding: 25px 30px;
+        border-radius: 16px;
+        margin-bottom: 50px;
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+
+    .policy-intro i {
+        font-size: 24px;
+        color: var(--success);
+    }
+
+    .policy-intro p {
+        font-size: 14px;
+        line-height: 1.7;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+
+    .policy-intro strong {
+        color: white;
+    }
+
+    .policy-section {
+        padding: 40px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    .policy-section:hover {
+        border-color: rgba(212, 175, 55, 0.2);
+        background: rgba(212, 175, 55, 0.02);
+    }
+
+    .policy-section h2 {
+        font-family: 'Cinzel', serif;
+        font-size: 18px;
+        color: var(--primary);
+        margin-bottom: 20px;
+        letter-spacing: 2px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .policy-section h2 span {
+        font-size: 12px;
+        opacity: 0.5;
+        font-family: 'Inter';
+    }
+
+    .policy-section p {
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.9;
+        margin-bottom: 20px;
+    }
+
+    .policy-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+    }
+
+    .policy-list li {
+        font-size: 13px;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .policy-list li i {
+        color: var(--primary);
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+    .policy-list li strong {
+        color: white;
+        margin-right: 5px;
+    }
+
+    .policy-footer {
+        text-align: center;
+        margin-top: 80px;
+        padding-top: 40px;
+        border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 768px) {
+        .policy-section {
+            padding: 30px 20px;
+        }
+    }
+</style>
+
+<div class="page-container">
+    <div class="privacy-wrapper">
+        <div class="privacy-header">
+            <h1 class="privacy-title">DATA <span style="color:var(--primary);">PROTECTION</span></h1>
+            <div class="privacy-meta">Protocol v2.4 | Last Revision: April 12, 2026</div>
+        </div>
+
+        <div class="policy-intro">
+            <i class="fas fa-fingerprint"></i>
+            <p><strong>SECURITY IS NOT OPTIONAL.</strong> At OCTALX, we treat your data with the same institutional rigor as our financial assets. This Privacy Protocol outlines how your information is harvested, shielded, and managed within our ecosystem.</p>
+        </div>
+
+        <div class="policy-section glass">
+            <h2><span>01</span> INFORMATION HARVESTING</h2>
+            <p>We collect specific data points required to maintain structural integrity and regulatory compliance:</p>
+            <ul class="policy-list">
+                <li><i class="fas fa-id-card"></i> <div><strong>Identity:</strong> Username, Nationality, DOB</div></li>
+                <li><i class="fas fa-envelope"></i> <div><strong>Contact:</strong> Email and Secure Comm Channels</div></li>
+                <li><i class="fas fa-id-badge"></i> <div><strong>KYC:</strong> Encrypted ID Documents</div></li>
+                <li><i class="fas fa-wallet"></i> <div><strong>Financial:</strong> Wallet Nodes and Ledger Data</div></li>
+            </ul>
+        </div>
+
+        <div class="policy-section glass">
+            <h2><span>02</span> STRATEGIC USAGE</h2>
+            <p>Your harvested data is utilized exclusively for platform optimization, identity verification under AML/KYC regulations, and multi-factor security enforcement. We do not participate in third-party data monetization.</p>
+        </div>
+
+        <div class="policy-section glass">
+            <h2><span>03</span> ENCRYPTED STORAGE</h2>
+            <p>Identity documents and sensitive data reside in isolated, encrypted vaults with air-gapped backups. Access is restricted to Tier-1 compliance officers and is audited in real-time by our automated security systems.</p>
+        </div>
+
+        <div class="policy-section glass">
+            <h2><span>04</span> DATA SOVEREIGNTY</h2>
+            <p>You maintain ultimate sovereignty over your data. Upon request and verification, you may access, export, or request the permanent deletion of your PII (Personally Identifiable Information) from our active systems, subject to legal retention obligations.</p>
+        </div>
+
+        <div class="policy-section glass">
+            <h2><span>05</span> TERMINAL SECURITY</h2>
+            <p>All interactions with the OctalX terminal are secured via SSL/TLS 1.3 encryption protocols. We recommend the use of hardware-based 2FA (Two-Factor Authentication) for all high-value account accounts.</p>
+        </div>
+
+        <div class="policy-footer">
+            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 25px;">
+                Direct inquiries regarding data protection to: <a href="mailto:vault@octalx.com" style="color: var(--primary); text-decoration: none; font-weight: 700;">VAULT@OCTALX.COM</a>
+            </p>
+            <div style="display: flex; justify-content: center; gap: 30px;">
+                <a href="{% url 'terms' %}" style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 2px; text-decoration: none;">Terms of Service</a>
+                <a href="{% url 'index' %}" style="color: var(--primary); font-size: 11px; text-transform: uppercase; letter-spacing: 2px; text-decoration: none; font-weight: 800;">Return to Terminal</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

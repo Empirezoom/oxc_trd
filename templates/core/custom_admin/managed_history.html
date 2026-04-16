@@ -1,0 +1,141 @@
+{% extends 'core/custom_admin/admin_base.html' %}
+{% load static %}
+
+{% block admin_title %}Managed Trade History{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-header">
+    <div>
+        <h1 class="admin-title">Managed <span style="color:var(--primary);">Trade Ledger</span></h1>
+        <p class="admin-sub">Audit trail for broker-executed and AI-managed positions</p>
+    </div>
+</div>
+
+<div class="admin-search-wrap">
+    <div style="position: relative;">
+        <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+        <input type="text" id="admin-search" placeholder="Search by trader, asset, action or status..." onkeyup="filterAdminRows()">
+    </div>
+</div>
+
+<div id="admin-card-container" class="admin-mobile-only" style="margin-bottom: 30px;">
+    <!-- Mobile cards injected via JS -->
+</div>
+
+<div class="data-card glass admin-desktop-only" style="padding: 0; overflow: hidden;">
+    <div style="max-height: 500px; overflow-y: auto;">
+        <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Trader</th>
+                <th>Action</th>
+                <th>Asset</th>
+                <th>Stake (USD)</th>
+                <th>Profit / Payout</th>
+                <th>Status</th>
+                <th class="right">Action</th>
+            </tr>
+        </thead>
+        <tbody id="source-tbody">
+            {% for t in trades %}
+            <tr class="data-row" 
+                data-trader="{{ t.user.username }}"
+                data-action="{{ t.trade_action }}"
+                data-entry="${{ t.entry_price|floatformat:2 }}"
+                data-asset="{{ t.asset.symbol }}"
+                data-stake="${{ t.amount|floatformat:2 }}"
+                data-profit="+${{ t.profit|floatformat:2 }}"
+                data-status="{{ t.status }}"
+                data-win-url="{% url 'admin_manage_trade_action' t.id 'WON' %}"
+                data-loss-url="{% url 'admin_manage_trade_action' t.id 'LOSS' %}"
+            >
+                <td class="mono dim">{{ t.created_at|date:"M d, H:i" }}</td>
+                <td class="bold">{{ t.user.username }}</td>
+                <td class="bold {% if t.trade_action == 'BUY' %}color-buy{% else %}color-sell{% endif %}">{{ t.trade_action }} @ ${{ t.entry_price|floatformat:2 }}</td>
+                <td>{{ t.asset.symbol }}</td>
+                <td class="mono">${{ t.amount|floatformat:2 }}</td>
+                <td class="mono" style="color:var(--success);">+${{ t.profit|floatformat:2 }}</td>
+                <td>
+                    <span class="badge" style="{% if t.status == 'WON' %}color:var(--success);{% elif t.status == 'LOSS' %}color:var(--danger);{% else %}color:#ff9900;{% endif %}">{{ t.status }}</span>
+                </td>
+                <td class="right">
+                    {% if t.status == 'PENDING' %}
+                    <a href="{% url 'admin_manage_trade_action' t.id 'WON' %}" class="btn-gold-sm" style="background:var(--success); color:black; padding:5px 10px; font-size:10px;">WIN</a>
+                    <a href="{% url 'admin_manage_trade_action' t.id 'LOSS' %}" class="btn-gold-sm" style="background:var(--danger); color:white; padding:5px 10px; font-size:10px;">LOSS</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr id="empty-msg">
+                <td colspan="8" class="center dim" style="padding: 40px;">No managed executions found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    @media (max-width: 991px) {
+        .admin-desktop-only { display: none; }
+        .admin-mobile-only { display: block; }
+    }
+    @media (min-width: 992px) {
+        .admin-mobile-only { display: none; }
+    }
+</style>
+
+<script>
+    function filterAdminRows() {
+        const query = document.getElementById('admin-search').value.toLowerCase();
+        const rows = document.querySelectorAll('.data-row');
+        const container = document.getElementById('admin-card-container');
+        
+        let html = '';
+        rows.forEach(row => {
+            const txt = row.textContent.toLowerCase();
+            if (txt.includes(query)) {
+                row.style.display = '';
+                const d = row.dataset;
+                const statusColor = d.status === 'WON' ? 'var(--success)' : (d.status === 'LOSS' ? 'var(--danger)' : '#ff9900');
+                
+                html += `
+                    <div class="admin-table-card">
+                        <div class="atc-row">
+                            <span class="atc-label">Trader</span>
+                            <span class="bold">${d.trader}</span>
+                        </div>
+                        <div class="atc-row">
+                            <span class="atc-label">Execution</span>
+                            <span class="bold ${d.action === 'BUY' ? 'color-buy' : 'color-sell'}">${d.action} @ ${d.entry}</span>
+                        </div>
+                        <div class="atc-row">
+                            <span class="atc-label">Asset / Stake</span>
+                            <span class="mono">${d.asset} &bull; ${d.stake}</span>
+                        </div>
+                        <div class="atc-row">
+                            <span class="atc-label">Net Payout</span>
+                            <span class="mono" style="color:var(--success)">${d.profit}</span>
+                        </div>
+                        <div class="atc-row">
+                            <span class="atc-label">Status</span>
+                            <span style="color:${statusColor}; font-weight:900">${d.status}</span>
+                        </div>
+                        ${d.status === 'PENDING' ? `
+                        <div style="display:flex; gap:10px; margin-top:15px;">
+                            <a href="${d.winUrl}" class="bc-btn" style="flex:1; padding:10px; background:var(--success); border-radius:8px; border:none; text-align:center; color:black; font-size:11px; font-weight:800; text-decoration:none;">SET WIN</a>
+                            <a href="${d.lossUrl}" class="bc-btn" style="flex:1; padding:10px; background:var(--danger); border-radius:8px; border:none; text-align:center; color:white; font-size:11px; font-weight:800; text-decoration:none;">SET LOSS</a>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        container.innerHTML = html || '<div class="center dim" style="padding:40px;">No results found.</div>';
+    }
+    document.addEventListener('DOMContentLoaded', filterAdminRows);
+</script>
+{% endblock %}

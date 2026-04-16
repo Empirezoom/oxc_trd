@@ -1,0 +1,210 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Transaction History | OCTALX{% endblock %}
+
+{% block content %}
+<div class="page-container" style="max-width: 900px; margin: 0 auto;">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">
+                <i class="fas fa-receipt" style="color: var(--primary);"></i> 
+                {% if is_demo_mode %}Virtual{% else %}Real{% endif %} History
+            </h1>
+            <p class="page-sub">Audit your fund movements and ledger status</p>
+        </div>
+        <a href="{% url 'wallet' %}" class="trade-btn-sm" style="padding: 12px 20px;">
+            <i class="fas fa-wallet"></i> My Wallet →
+        </a>
+    </div>
+
+    <!-- MODERN SEARCH BAR -->
+    <div class="search-wrap" style="margin-bottom: 25px; position: sticky; top: 75px; z-index: 100;">
+        <div style="position: relative;">
+            <i class="fas fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+            <input 
+                type="text" 
+                id="tx-search" 
+                placeholder="Search by asset, amount, date, or type..." 
+                style="width: 100%; background: #1a1e26; border: 2px solid var(--border); border-radius: 12px; padding: 15px 15px 15px 45px; color: white; font-weight: 600; outline: none; transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"
+                onkeyup="filterTransactions()"
+            >
+        </div>
+    </div>
+
+    <!-- Legend (Hidden on small mobile if needed) -->
+    <div class="tx-legend" style="display: flex; gap: 8px; margin-bottom: 25px; flex-wrap: wrap;">
+        <span style="background: rgba(14,203,129,0.1); color: var(--success); padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 900; letter-spacing: 0.5px;">DEPOSIT</span>
+        <span style="background: rgba(246,70,93,0.1); color: var(--danger); padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 900; letter-spacing: 0.5px;">WITHDRAWAL</span>
+    </div>
+
+    <!-- DYNAMIC MOBILE VIEW (Grouped by Date) -->
+    <div id="grouped-container">
+        <!-- JS will populate this -->
+        <div class="loading-state" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p style="margin-top: 15px; font-weight: 700;">Organizing Ledger...</p>
+        </div>
+    </div>
+
+    <!-- ORIGINAL HIDDEN TABLE (Source for JS) -->
+    <div style="display: none;">
+        <table id="source-table">
+            {% for tx in transactions %}
+            <tr class="tx-row" 
+                data-date="{{ tx.timestamp|date:'M d, Y' }}" 
+                data-full-date="{{ tx.timestamp|date:'M d, Y H:i' }}"
+                data-type="{{ tx.tx_type }}" 
+                data-asset-sym="{{ tx.asset.symbol }}" 
+                data-asset-name="{{ tx.asset.name }}"
+                data-amount="{% if tx.tx_type == 'DEPOSIT' %}+{% else %}-{% endif %}{{ tx.amount|floatformat:8 }}"
+                data-usd="{{ tx.usd_amount }}"
+                data-ref="{% if tx.tx_hash %}{{ tx.tx_hash|truncatechars:18 }}{% else %}On-chain / Manual{% endif %}"
+                data-status="{{ tx.status }}"
+                data-icon="{{ tx.asset.icon_class }}"
+            >
+                <td>{{ tx.timestamp|date:"M d, Y H:i" }} {{ tx.tx_type }} {{ tx.asset.symbol }} {{ tx.asset.name }} {{ tx.amount }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+<style>
+    .date-group-header {
+        font-family: 'Cinzel', serif;
+        font-size: 13px;
+        color: var(--primary);
+        margin: 35px 0 15px;
+        padding-left: 10px;
+        border-left: 3px solid var(--primary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .date-group-header .full-d {
+        font-family: inherit;
+        font-size: 10px;
+        color: var(--text-secondary);
+        opacity: 0.7;
+    }
+    .tx-card-m {
+        background: #0e1117;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: 0.2s;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .tx-card-m:active { transform: scale(0.98); }
+    .tx-card-m .left-p { display: flex; gap: 15px; align-items: center; }
+    .tx-card-m .icon-sq {
+        width: 40px;
+        height: 40px;
+        background: rgba(255,255,255,0.03);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+    .tx-card-m .type-l {
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+    }
+    .tx-card-m .amt-p { text-align: right; }
+    .tx-card-m .amt-val { font-size: 15px; font-weight: 800; margin-bottom: 2px; }
+    .tx-card-m .stat-l { font-size: 9px; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+</style>
+
+<script>
+    function filterTransactions() {
+        const query = document.getElementById('tx-search').value.toLowerCase();
+        const rows = document.querySelectorAll('.tx-row');
+        const groupedContainer = document.getElementById('grouped-container');
+        
+        let grouped = {};
+        
+        const today = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+        const yesDate = new Date(); yesDate.setDate(yesDate.getDate() - 1);
+        const yesterday = yesDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(query)) {
+                let dateKey = row.dataset.date;
+                let displayKey = dateKey;
+                
+                if (dateKey === today) displayKey = "Today: " + dateKey;
+                else if (dateKey === yesterday) displayKey = "Yesterday: " + dateKey;
+                else displayKey = dateKey + ":";
+
+                if (!grouped[displayKey]) grouped[displayKey] = [];
+                grouped[displayKey].push({
+                    fullDate: row.dataset.fullDate,
+                    type: row.dataset.type,
+                    symbol: row.dataset.assetSym,
+                    name: row.dataset.assetName,
+                    amount: row.dataset.amount,
+                    usd: row.dataset.usd,
+                    ref: row.dataset.ref,
+                    status: row.dataset.status,
+                    icon: row.dataset.icon
+                });
+            }
+        });
+
+        renderGrouped(grouped);
+    }
+
+    function renderGrouped(grouped) {
+        const container = document.getElementById('grouped-container');
+        container.innerHTML = '';
+        
+        const keys = Object.keys(grouped);
+        if (keys.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding: 50px; color: var(--text-secondary); opacity: 0.5;"><i class="fas fa-ghost fa-3x"></i><p style="margin-top:15px; font-weight:700;">No matching records found</p></div>`;
+            return;
+        }
+
+        keys.forEach(key => {
+            let html = `<div class="date-group-header"><span>${key}</span></div>`;
+            grouped[key].forEach(tx => {
+                const color = tx.type === 'DEPOSIT' ? 'var(--success)' : 'var(--danger)';
+                const statColor = tx.status === 'COMPLETED' ? 'var(--success)' : (tx.status === 'PENDING' ? '#4da6ff' : 'var(--danger)');
+                const statIcon = tx.status === 'COMPLETED' ? 'fa-check-circle' : (tx.status === 'PENDING' ? 'fa-hourglass-half' : 'fa-times-circle');
+
+                html += `
+                    <div class="tx-card-m">
+                        <div class="left-p">
+                            <div class="icon-sq" style="color: ${color}"><i class="${tx.icon}"></i></div>
+                            <div>
+                                <div class="type-l" style="color: ${color}">${tx.type}</div>
+                                <div style="font-size: 13px; font-weight: 800;">${tx.name}</div>
+                                <div style="font-size: 10px; color: var(--text-secondary);">${tx.fullDate.split(' ')[3]} &bull; ${tx.ref}</div>
+                            </div>
+                        </div>
+                        <div class="amt-p">
+                            <div class="amt-val" style="color: ${color}">${tx.amount} ${tx.symbol}</div>
+                            <div style="font-size: 11px; font-weight: 800; color: var(--text-secondary); opacity: 0.8;">
+                                ${window.OCTALX_CONFIG.prefSymbol}${(parseFloat(tx.usd) * window.OCTALX_CONFIG.currencyRate).toLocaleString(undefined, {minimumFractionDigits:2})}
+                            </div>
+                            <div class="stat-l" style="color: ${statColor}"><i class="fas ${statIcon}"></i> ${tx.status}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML += html;
+        });
+    }
+
+    // Initial Load
+    document.addEventListener("DOMContentLoaded", filterTransactions);
+</script>
+{% endblock %}
