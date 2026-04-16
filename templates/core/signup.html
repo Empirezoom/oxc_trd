@@ -12,6 +12,24 @@
     <link rel="stylesheet" href="{% static 'css/auth.css' %}">
 </head>
 <body class="auth-body">
+    <!-- Ultra-Clear Video Background -->
+    <video autoplay muted loop playsinline id="auth-bg-video" style="position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%; z-index: -2; object-fit: cover; opacity: 1; filter: brightness(0.7) contrast(1.1);">
+        <source src="{% static 'video/mixkit-stock-market-exchange-and-forex-prices-background-47006-hd-ready-1.mp4' %}" type="video/mp4">
+    </video>
+    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: -1;"></div>
+
+    <script>
+        // Force play for mobile browsers
+        document.addEventListener('DOMContentLoaded', function() {
+            var video = document.getElementById('auth-bg-video');
+            if (video) {
+                video.play().catch(function(error) {
+                    console.log("Autoplay prevented, retrying...");
+                });
+            }
+        });
+    </script>
+
     <div class="auth-wrapper">
         <!-- Left Visual Panel -->
         <div class="auth-visual" style="background-image: url('https://images.unsplash.com/photo-1611974717483-5828ff797374?q=80&w=1000&auto=format&fit=crop');">

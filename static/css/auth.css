@@ -384,10 +384,19 @@
     margin-top: 40px;
 }
 @media (max-width: 1024px) {
-    .auth-form-panel { max-width: 100%; border-radius: 0; }
-    .auth-wrapper { flex-direction: column; }
+    .auth-wrapper { 
+        background: transparent; 
+        flex-direction: column; 
+    }
+    .auth-form-panel { 
+        max-width: 100%; 
+        border-radius: 0; 
+        background: rgba(14, 18, 24, 0.7); /* Strong transparency for mobile video */
+        backdrop-filter: blur(15px); /* Premium glass effect */
+        min-height: 100vh; 
+        padding: 40px 25px; 
+    }
     .auth-visual { display: none; }
-    .auth-form-panel { min-height: 100vh; padding: 40px 25px; }
 }
 
 @media (max-width: 768px) {
